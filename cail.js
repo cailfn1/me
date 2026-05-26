@@ -1301,7 +1301,7 @@ function initCursor() {
   let dx = mx;
   let dy = my;
   let lastTrail = 0;
-  const TRAIL_INTERVAL = 55;
+  const TRAIL_INTERVAL = 32;
 
   function frame() {
     dx += (mx - dx) * 0.32;
@@ -1314,9 +1314,15 @@ function initCursor() {
   function spawnTrail(x, y) {
     const t = document.createElement('div');
     t.className = 'cursor-trail';
-    t.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+    // small random horizontal sway so drips don't fall in a perfect line
+    const sway = (Math.random() - 0.5) * 8;
+    t.style.left = (x + sway) + 'px';
+    t.style.top  = y + 'px';
+    // random tiny size variation for organic feel
+    const scale = 0.8 + Math.random() * 0.5;
+    t.style.setProperty('--scale', scale);
     document.body.appendChild(t);
-    setTimeout(() => t.remove(), 700);
+    setTimeout(() => t.remove(), 1300);
   }
 
   function spawnHeartBurst(x, y) {
