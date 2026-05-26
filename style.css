@@ -54,7 +54,7 @@ body {
     will-change: transform, opacity;
     width: 22px;
     height: 22px;
-    filter: drop-shadow(0 0 6px rgba(255, 126, 182, 0.65));
+    filter: drop-shadow(0 0 5px rgba(180, 30, 70, 0.7)) drop-shadow(0 0 12px rgba(80, 10, 40, 0.45));
     transition: opacity 0.2s ease;
   }
 
@@ -62,17 +62,18 @@ body {
     content: '';
     position: absolute;
     inset: 0;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ff7eb6'/%3E%3C/svg%3E") center/contain no-repeat;
-    animation: heartbeat 1s ease-in-out infinite;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%238a1538' stroke='%231a0006' stroke-width='0.7'/%3E%3Cpath d='M12 5 L10.5 8.5 L13.2 11 L10.4 13.4 L12.3 16.4 L11 19' stroke='%231a0006' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+    animation: heartbeat 1.5s ease-in-out infinite;
     transform-origin: center;
   }
 
   @keyframes heartbeat {
     0%   { transform: scale(1); }
-    14%  { transform: scale(1.18); }
-    28%  { transform: scale(1); }
-    42%  { transform: scale(1.12); }
-    70%  { transform: scale(1); }
+    10%  { transform: scale(1.15); }
+    20%  { transform: scale(0.96); }
+    32%  { transform: scale(1.08); }
+    44%  { transform: scale(1); }
+    /* long pause — broken heart skipping a beat */
     100% { transform: scale(1); }
   }
 
@@ -84,19 +85,20 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
     pointer-events: none;
     z-index: 9999;
     transform: translate3d(-50%, -50%, 0);
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffb4d2'/%3E%3C/svg%3E") center/contain no-repeat;
-    filter: drop-shadow(0 0 4px rgba(255, 180, 210, 0.85));
-    animation: cursorTrailFade 900ms ease-out forwards;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%236a0f2a'/%3E%3C/svg%3E") center/contain no-repeat;
+    filter: drop-shadow(0 0 3px rgba(120, 15, 50, 0.85));
+    animation: cursorTrailFade 1100ms ease-in forwards;
   }
 
+  /* drips down like blood */
   @keyframes cursorTrailFade {
-    0%   { opacity: 0.9; transform: translate3d(-50%, -50%, 0) scale(0.6) translateY(0); }
-    100% { opacity: 0;   transform: translate3d(-50%, -50%, 0) scale(0.3) translateY(10px); }
+    0%   { opacity: 0.95; transform: translate3d(-50%, -50%, 0) scale(0.7) translateY(0); }
+    100% { opacity: 0;    transform: translate3d(-50%, -50%, 0) scale(0.35) translateY(22px); }
   }
 
   .heart-burst {
@@ -106,15 +108,15 @@ body {
     pointer-events: none;
     z-index: 9998;
     transform: translate(-50%, -50%);
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ff7eb6'/%3E%3C/svg%3E") center/contain no-repeat;
-    filter: drop-shadow(0 0 4px rgba(255, 126, 182, 0.7));
-    animation: heartBurstFly 700ms ease-out forwards;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%238a1538' stroke='%231a0006' stroke-width='0.7'/%3E%3Cpath d='M12 5 L10.5 8.5 L13.2 11 L10.4 13.4 L12.3 16.4 L11 19' stroke='%231a0006' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+    filter: drop-shadow(0 0 4px rgba(180, 30, 70, 0.7));
+    animation: heartBurstFly 800ms ease-out forwards;
   }
 
   @keyframes heartBurstFly {
     0%   { opacity: 1; transform: translate(-50%, -50%) translate(0, 0) scale(0.4) rotate(0deg); }
     30%  { opacity: 1; transform: translate(-50%, -50%) translate(calc(var(--tx) * 0.5), calc(var(--ty) * 0.5)) scale(1.1) rotate(calc(var(--rot) * 0.5)); }
-    100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0.6) rotate(var(--rot)); }
+    100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--tx), calc(var(--ty) + 30px)) scale(0.6) rotate(var(--rot)); }
   }
 }
 
