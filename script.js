@@ -886,6 +886,48 @@ function initStarfield() {
   }
 }
 
+function initShootingStars() {
+  const host = $('#shootingStars');
+  if (!host) return;
+  function spawn() {
+    const s = document.createElement('div');
+    s.className = 'shooting-star';
+    const startX = Math.random() * 60 + 30;   // 30vw–90vw
+    const startY = Math.random() * 40;        // top 40vh
+    s.style.left = startX + 'vw';
+    s.style.top  = startY + 'vh';
+    s.style.setProperty('--dx', -(280 + Math.random() * 220) + 'px');
+    s.style.setProperty('--dy',  (140 + Math.random() * 140) + 'px');
+    host.appendChild(s);
+    setTimeout(() => s.remove(), 2000);
+  }
+  function loop() {
+    spawn();
+    const next = 7000 + Math.random() * 14000; // every 7–21s
+    setTimeout(loop, next);
+  }
+  setTimeout(loop, 3500);
+}
+
+function initParallax() {
+  const stars  = $('#stars');
+  const fog    = document.querySelector('.fog');
+  const blobs  = document.querySelector('.blobs');
+  if (!stars && !fog && !blobs) return;
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const y = window.scrollY;
+      if (stars) stars.style.transform = `translate3d(0, ${y * -0.18}px, 0)`;
+      if (fog)   fog.style.transform   = `translate3d(0, ${y * -0.32}px, 0)`;
+      if (blobs) blobs.style.transform = `translate3d(0, ${y * -0.45}px, 0)`;
+      ticking = false;
+    });
+  }, { passive: true });
+}
+
 function initWebBtns() {
   document.querySelectorAll('[data-action]').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -1460,6 +1502,8 @@ runBoot().then(() => {
   initGuestbook();
   initWebBtns();
   initStarfield();
+  initShootingStars();
+  initParallax();
   initSnake();
   initSounds();
   initCursor();
