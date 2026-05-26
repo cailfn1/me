@@ -1018,43 +1018,23 @@ function initJackpot() {
   });
 }
 
+// right click = quiet petal scatter from click point (gothic & on-theme, no shouting)
 function spawnJackpot(x, y) {
-  // muzzle flash glow behind everything
-  const flash = document.createElement('div');
-  flash.className = 'muzzle-flash';
-  flash.style.left = x + 'px';
-  flash.style.top  = y + 'px';
-  document.body.appendChild(flash);
-  setTimeout(() => flash.remove(), 650);
-
-  // JACKPOT! text
-  const txt = document.createElement('div');
-  txt.className = 'jackpot-text';
-  txt.textContent = 'JACKPOT!';
-  txt.style.left = x + 'px';
-  txt.style.top  = y + 'px';
-  // tiny random rotation so each one feels slightly different
-  txt.style.setProperty('--tilt', ((Math.random() - 0.5) * 8).toFixed(1) + 'deg');
-  document.body.appendChild(txt);
-  setTimeout(() => txt.remove(), 1600);
-
-  // scattering coins/cash
-  const SYMBOLS = ['$', '$', '💰', '$'];
-  const COUNT = 6;
-  for (let i = 0; i < COUNT; i++) {
-    const c = document.createElement('div');
-    c.className = 'jackpot-coin';
-    c.textContent = SYMBOLS[i % SYMBOLS.length];
-    // angle mostly upward + outward like an explosion
-    const angle = (-Math.PI / 2) + ((i / (COUNT - 1)) - 0.5) * (Math.PI * 1.1) + (Math.random() - 0.5) * 0.3;
-    const dist = 90 + Math.random() * 80;
-    c.style.left = x + 'px';
-    c.style.top  = y + 'px';
-    c.style.setProperty('--dx', (Math.cos(angle) * dist).toFixed(1) + 'px');
-    c.style.setProperty('--dy', (Math.sin(angle) * dist).toFixed(1) + 'px');
-    c.style.animationDelay = (Math.random() * 0.08).toFixed(2) + 's';
-    document.body.appendChild(c);
-    setTimeout(() => c.remove(), 1700);
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const startX = (x / vw) * 100;
+  const startY = (y / vh) * 100;
+  // 5-7 petals burst outward from click point with random drift directions
+  const count = 5 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const drift = (Math.random() - 0.5) * 320;
+      spawnPetalAt(startX + (Math.random() - 0.5) * 1.5, startY + (Math.random() - 0.5) * 1, {
+        drift,
+        dur: 7 + Math.random() * 5,
+        size: 10 + Math.random() * 8,
+      });
+    }, i * 50);
   }
 }
 
@@ -1244,6 +1224,90 @@ function initPetals() {
 
   // init counter display
   bumpPetalCount(0);
+}
+
+// thunder rumble: periodic + on click in the blood moon area
+function initThunder() {
+  const flash = $('#thunderFlash');
+  const moon = document.querySelector('.blood-moon');
+  if (!flash) return;
+
+  function rumble() {
+    flash.classList.remove('active');
+    void flash.offsetWidth;
+    flash.classList.add('active');
+    if (moon) {
+      moon.classList.remove('struck');
+      void moon.offsetWidth;
+      moon.classList.add('struck');
+    }
+    setTimeout(() => {
+      flash.classList.remove('active');
+      moon && moon.classList.remove('struck');
+    }, 1200);
+  }
+
+  // periodic atmospheric rumble every 2-4 min
+  function loop() {
+    rumble();
+    setTimeout(loop, 130000 + Math.random() * 110000);
+  }
+  setTimeout(loop, 60000); // first one after 1 min
+
+  // click in upper-right quadrant (where the moon visually sits) → manual strike
+  document.addEventListener('click', e => {
+    if (e.target.closest('a, button, input, textarea, .music, .terminal, .game, .work-card, .anime-card, .skill-icon, .webbtn, .mascot, .tree-branch, .gb-form')) return;
+    const x = e.clientX / window.innerWidth;
+    const y = e.clientY / window.innerHeight;
+    if (x > 0.62 && y < 0.38) rumble();
+  });
+}
+
+// konami code → cursor becomes ryuk holding an apple for 10s
+function initKonami() {
+  const SEQ = ['arrowup','arrowup','arrowdown','arrowdown','arrowleft','arrowright','arrowleft','arrowright','b','a'];
+  let idx = 0;
+  window.addEventListener('keydown', e => {
+    // ignore when typing in inputs
+    if (e.target.matches('input, textarea, [contenteditable]')) return;
+    const k = e.key.toLowerCase();
+    if (k === SEQ[idx]) {
+      idx++;
+      if (idx >= SEQ.length) {
+        idx = 0;
+        triggerRyuk();
+      }
+    } else {
+      idx = (k === SEQ[0]) ? 1 : 0;
+    }
+  });
+}
+
+function triggerRyuk() {
+  document.body.classList.add('ryuk-mode');
+  if (typeof showToast === 'function') showToast('found one of em 🍎');
+  // shower of black feathers from the cursor area
+  const featherHost = $('#feathers');
+  if (featherHost) {
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        const f = document.createElement('div');
+        f.className = 'feather';
+        f.style.left = (30 + Math.random() * 40) + 'vw';
+        f.style.width = '24px';
+        f.style.height = '24px';
+        const sway = (Math.random() - 0.5) * 180;
+        const drift = (Math.random() - 0.5) * 240;
+        const dur = 14 + Math.random() * 6;
+        f.style.setProperty('--sx', sway + 'px');
+        f.style.setProperty('--ex', drift + 'px');
+        f.style.setProperty('--dur', dur + 's');
+        featherHost.appendChild(f);
+        setTimeout(() => f.remove(), dur * 1000 + 200);
+      }, i * 200);
+    }
+  }
+  setTimeout(() => document.body.classList.remove('ryuk-mode'), 10000);
 }
 
 // lone crow: flies across the sky every 2-3 minutes
@@ -1944,6 +2008,8 @@ runBoot().then(() => {
   initFeathers();
   initPetals();
   initCrow();
+  initThunder();
+  initKonami();
   initParallax();
   initConstellation();
   initComets();

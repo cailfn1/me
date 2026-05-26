@@ -68,6 +68,13 @@ body {
     50%      { rotate: 3deg; }
   }
 
+  /* ryuk mode: konami code activates this for 10s — cursor becomes tiny ryuk holding an apple */
+  body.ryuk-mode .cursor-dot::before {
+    background: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M 8 14 Q 4 12 5 18 Q 8 17 10 16 Z' fill='%230a0408' stroke='%231a0410' stroke-width='0.4'/%3E%3Cpath d='M 24 14 Q 28 12 27 18 Q 24 17 22 16 Z' fill='%230a0408' stroke='%231a0410' stroke-width='0.4'/%3E%3Crect x='13' y='12' width='6' height='14' fill='%230a0408' stroke='%231a0410' stroke-width='0.4' rx='1.5'/%3E%3Ccircle cx='16' cy='9' r='3.5' fill='%230a0408' stroke='%231a0410' stroke-width='0.4'/%3E%3Cpath d='M 13 7 L 12 4 L 14 6 L 16 3 L 18 6 L 20 4 L 19 7 Z' fill='%230a0408' stroke='%231a0410' stroke-width='0.3' stroke-linejoin='round'/%3E%3Ccircle cx='14.5' cy='9' r='0.7' fill='%23ffd400'/%3E%3Ccircle cx='17.5' cy='9' r='0.7' fill='%23ffd400'/%3E%3Cline x1='14' y1='26' x2='13' y2='30' stroke='%230a0408' stroke-width='1.8' stroke-linecap='round'/%3E%3Cline x1='18' y1='26' x2='19' y2='30' stroke='%230a0408' stroke-width='1.8' stroke-linecap='round'/%3E%3Cline x1='19' y1='17' x2='23' y2='20' stroke='%230a0408' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='21' r='2.8' fill='%23b81836' stroke='%23400612' stroke-width='0.4'/%3E%3Cpath d='M 24 18.5 L 25 17 L 23.8 17.5' stroke='%231a4a18' stroke-width='0.7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat !important;
+  }
+  body.ryuk-mode .cursor-dot::after { display: none; }
+  body.ryuk-mode .cursor-dot { animation: none; rotate: 0deg !important; }
+
   /* falling leaf: dark autumn shape w/ broken stem + visible veins + crimson outline so it pops on dark bg */
   .cursor-dot::before {
     content: '';
@@ -371,6 +378,79 @@ body::before {
     rgba(255, 80, 110, 0.9) 28px
   );
   mix-blend-mode: screen;
+}
+
+/* distant jagged mountain silhouette along the bottom edge */
+.mountains {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 160px;
+  z-index: -2;
+  pointer-events: none;
+  opacity: 0.85;
+  filter: drop-shadow(0 -2px 8px rgba(40, 6, 18, 0.4));
+}
+@media (max-width: 540px) {
+  .mountains { height: 110px; }
+}
+
+/* slow rolling fog at the bottom of the screen */
+.ground-fog {
+  position: fixed;
+  bottom: 0;
+  left: -10%;
+  width: 130%;
+  height: 180px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(60, 10, 28, 0.18) 35%,
+    rgba(30, 5, 18, 0.32) 100%);
+  filter: blur(28px);
+  animation: groundFogDrift 90s ease-in-out infinite alternate;
+}
+@keyframes groundFogDrift {
+  0%   { transform: translateX(-3%); }
+  100% { transform: translateX(3%); }
+}
+
+/* thunder rumble: brief red flash over everything when triggered */
+.thunder-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80vw 70vh at 78% 18%, rgba(255, 70, 100, 0.32) 0%, rgba(160, 20, 50, 0.18) 35%, transparent 70%);
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+.thunder-flash.active { animation: thunderFlashFade 1100ms ease-out forwards; }
+@keyframes thunderFlashFade {
+  0%   { opacity: 0; }
+  6%   { opacity: 1; }
+  14%  { opacity: 0.2; }
+  22%  { opacity: 0.95; }
+  100% { opacity: 0; }
+}
+
+/* blood moon: faster pulse + brighter when hovered or "struck" */
+.blood-moon.struck { animation: moonStruck 1100ms ease-out forwards; }
+@keyframes moonStruck {
+  0%   { transform: scale(1.04); opacity: 1; filter: blur(8px) brightness(1); }
+  20%  { transform: scale(1.15); opacity: 1; filter: blur(6px) brightness(2.2); }
+  100% { transform: scale(1.04); opacity: 1; filter: blur(8px) brightness(1); }
+}
+
+/* cherry tree hover: petals tremble subtly */
+.tree-branch:hover svg g g { animation: flowerTremble 0.6s ease-in-out 2; transform-origin: center; transform-box: fill-box; }
+@keyframes flowerTremble {
+  0%, 100% { translate: 0 0; }
+  25% { translate: -0.5px -0.5px; }
+  50% { translate: 0.5px 0.4px; }
+  75% { translate: -0.3px 0.6px; }
 }
 
 /* ===== gothic cherry blossom branch (top-right corner) ===== */
