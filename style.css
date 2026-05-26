@@ -444,6 +444,126 @@ body::before {
   100% { transform: scale(1.04); opacity: 1; filter: blur(8px) brightness(1); }
 }
 
+/* ===== command palette (cmd/ctrl + K) ===== */
+.cmdk {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14vh;
+}
+.cmdk[hidden] { display: none; }
+.cmdk-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 2, 8, 0.7);
+  backdrop-filter: blur(6px);
+  animation: cmdkFade 180ms ease-out;
+}
+.cmdk-modal {
+  position: relative;
+  width: min(580px, 92vw);
+  background: rgba(18, 10, 22, 0.92);
+  border: 1px solid rgba(180, 30, 70, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(120, 10, 40, 0.25);
+  overflow: hidden;
+  animation: cmdkRise 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes cmdkFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cmdkRise { from { opacity: 0; transform: translateY(-12px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.cmdk-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(180, 30, 70, 0.25);
+  color: #ece8f0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  padding: 16px 18px;
+  outline: none;
+  letter-spacing: 0.3px;
+}
+.cmdk-input::placeholder { color: rgba(255, 255, 255, 0.3); }
+.cmdk-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+  max-height: 50vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 30, 70, 0.3) transparent;
+}
+.cmdk-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--text);
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  border-left: 2px solid transparent;
+}
+.cmdk-item.active {
+  background: rgba(180, 30, 70, 0.14);
+  border-left-color: var(--pink, #ff7eb6);
+}
+.cmdk-item:hover { background: rgba(180, 30, 70, 0.08); }
+.cmdk-icon {
+  width: 22px;
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.85;
+}
+.cmdk-name { flex: 1; }
+.cmdk-tag {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 3px;
+}
+.cmdk-empty {
+  padding: 24px 18px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.4px;
+}
+.cmdk-footer {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 8px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  letter-spacing: 0.3px;
+}
+.cmdk-footer kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  margin: 0 2px;
+  font-size: 9px;
+  font-family: inherit;
+}
+.cmdk-hint { margin-left: auto; opacity: 0.5; }
+@media (max-width: 540px) {
+  .cmdk-hint { display: none; }
+}
+
 /* cherry tree hover: petals tremble subtly */
 .tree-branch:hover svg g g { animation: flowerTremble 0.6s ease-in-out 2; transform-origin: center; transform-box: fill-box; }
 @keyframes flowerTremble {

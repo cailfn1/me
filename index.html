@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=56" />
+  <link rel="stylesheet" href="style.css?v=57" />
 </head>
 <body data-discord-id="1480622111339843876">
   <div class="blobs" aria-hidden="true">
@@ -154,6 +154,19 @@
   <div class="ground-fog" aria-hidden="true"></div>
   <div class="thunder-flash" id="thunderFlash" aria-hidden="true"></div>
   <div class="notebook-paper" aria-hidden="true"></div>
+  <div class="cmdk" id="cmdk" hidden>
+    <div class="cmdk-backdrop" id="cmdkBackdrop"></div>
+    <div class="cmdk-modal" role="dialog" aria-label="command palette">
+      <input class="cmdk-input" id="cmdkInput" type="text" placeholder="search commands..." autocomplete="off" spellcheck="false" />
+      <ul class="cmdk-list" id="cmdkList" role="listbox"></ul>
+      <div class="cmdk-footer">
+        <span><kbd>↑</kbd><kbd>↓</kbd> nav</span>
+        <span><kbd>↵</kbd> run</span>
+        <span><kbd>esc</kbd> close</span>
+        <span class="cmdk-hint">⌘K / ctrl+K to open</span>
+      </div>
+    </div>
+  </div>
   <div class="shooting-stars" id="shootingStars" aria-hidden="true"></div>
   <svg class="constellation" id="constellation" aria-hidden="true">
     <line id="conLine1" x1="0" y1="0" x2="0" y2="0" opacity="0"></line>
@@ -470,6 +483,6 @@
     </div>
   </div>
 
-  <script src="cail.js?v=56"></script>
+  <script src="cail.js?v=57"></script>
 </body>
 </html>

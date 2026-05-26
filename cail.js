@@ -1263,6 +1263,148 @@ function initThunder() {
   });
 }
 
+// command palette: cmd/ctrl + K opens it
+function initCmdK() {
+  const modal = $('#cmdk');
+  const input = $('#cmdkInput');
+  const list  = $('#cmdkList');
+  const backdrop = $('#cmdkBackdrop');
+  if (!modal || !input || !list) return;
+
+  const COMMANDS = [
+    { icon: '🌸', name: 'trigger wind gust',     tag: 'fx',   run: () => spawnWindGust() },
+    { icon: '🪶', name: 'drop a single feather', tag: 'fx',   run: () => spawnSingleFeather() },
+    { icon: '⚡', name: 'thunder rumble',         tag: 'fx',   run: () => triggerThunder() },
+    { icon: '🦅', name: 'send a crow',            tag: 'fx',   run: () => spawnCrowNow() },
+    { icon: '🍎', name: 'ryuk mode (10s)',        tag: 'easter', run: () => triggerRyuk() },
+    { icon: '🎮', name: 'open snake game',        tag: 'play', run: () => { const b = document.querySelector('[data-action="snake"]'); b && b.click(); } },
+    { icon: '>_', name: 'open terminal',          tag: 'play', run: () => { const t = document.querySelector('[data-action="terminal"]'); if (t) t.click(); else if (typeof openTerminal === 'function') openTerminal(); } },
+    { icon: '♪', name: 'play / pause music',      tag: 'music', run: () => $('#musicBtn') && $('#musicBtn').click() },
+    { icon: '⏭', name: 'next track',              tag: 'music', run: () => $('#musicNext') && $('#musicNext').click() },
+    { icon: '🔀', name: 'shuffle a random track', tag: 'music', run: () => triggerShuffle() },
+    { icon: '↓', name: 'jump to about',           tag: 'nav',  run: () => location.hash = '#about' },
+    { icon: '↓', name: 'jump to anime stats',     tag: 'nav',  run: () => location.hash = '#anime' },
+    { icon: '↓', name: 'jump to my work',         tag: 'nav',  run: () => location.hash = '#work' },
+    { icon: '↓', name: 'jump to arcade',          tag: 'nav',  run: () => location.hash = '#arcade' },
+    { icon: '🎌', name: 'open anime.cail.love',   tag: 'link', run: () => window.open('https://anime.cail.love', '_blank', 'noopener') },
+    { icon: '☆', name: 'open github',             tag: 'link', run: () => window.open('https://github.com/cailfn1', '_blank', 'noopener') },
+  ];
+
+  let active = 0;
+  let filtered = COMMANDS.slice();
+
+  function render() {
+    if (filtered.length === 0) {
+      list.innerHTML = '<li class="cmdk-empty">no commands match. try `petal`, `music`, `ryuk`...</li>';
+      return;
+    }
+    list.innerHTML = filtered.map((c, i) =>
+      `<li class="cmdk-item${i === active ? ' active' : ''}" data-i="${i}" role="option">
+        <span class="cmdk-icon">${c.icon}</span>
+        <span class="cmdk-name">${c.name}</span>
+        <span class="cmdk-tag">${c.tag}</span>
+      </li>`
+    ).join('');
+    // hover/click handlers
+    list.querySelectorAll('.cmdk-item').forEach(el => {
+      el.addEventListener('mouseenter', () => { active = +el.dataset.i; render(); });
+      el.addEventListener('click', () => execute());
+    });
+    // scroll active into view
+    const cur = list.querySelector('.cmdk-item.active');
+    if (cur) cur.scrollIntoView({ block: 'nearest' });
+  }
+
+  function filter(query) {
+    const q = query.toLowerCase().trim();
+    if (!q) { filtered = COMMANDS.slice(); }
+    else { filtered = COMMANDS.filter(c => (c.name + ' ' + c.tag).toLowerCase().includes(q)); }
+    active = 0;
+    render();
+  }
+
+  function open() {
+    modal.hidden = false;
+    input.value = '';
+    filter('');
+    setTimeout(() => input.focus(), 30);
+  }
+  function close() {
+    modal.hidden = true;
+    input.blur();
+  }
+  function execute() {
+    const cmd = filtered[active];
+    close();
+    if (cmd) setTimeout(() => cmd.run(), 60);
+  }
+
+  window.addEventListener('keydown', e => {
+    const cmdOrCtrl = e.metaKey || e.ctrlKey;
+    if (cmdOrCtrl && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      modal.hidden ? open() : close();
+      return;
+    }
+    if (modal.hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, filtered.length - 1); render(); return; }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); active = Math.max(active - 1, 0); render(); return; }
+    if (e.key === 'Enter')     { e.preventDefault(); execute(); return; }
+  });
+
+  input.addEventListener('input', () => filter(input.value));
+  backdrop && backdrop.addEventListener('click', close);
+}
+
+// helper functions for cmd palette
+function spawnWindGust() {
+  const drift = -(220 + Math.random() * 220);
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      spawnPetalAt(60 + Math.random() * 36, Math.random() * 16, { drift: drift + (Math.random() - 0.5) * 60, dur: 12 + Math.random() * 5 });
+    }, i * 150);
+  }
+}
+function spawnSingleFeather() {
+  const host = $('#feathers');
+  if (!host) return;
+  const f = document.createElement('div');
+  f.className = 'feather';
+  f.style.left = (20 + Math.random() * 60) + 'vw';
+  f.style.width = '24px';
+  f.style.height = '24px';
+  f.style.setProperty('--sx', (Math.random() - 0.5) * 220 + 'px');
+  f.style.setProperty('--ex', (Math.random() - 0.5) * 260 + 'px');
+  f.style.setProperty('--dur', '20s');
+  host.appendChild(f);
+  setTimeout(() => f.remove(), 20500);
+}
+function triggerThunder() {
+  const flash = $('#thunderFlash');
+  const moon = document.querySelector('.blood-moon');
+  if (!flash) return;
+  flash.classList.remove('active'); void flash.offsetWidth; flash.classList.add('active');
+  if (moon) { moon.classList.remove('struck'); void moon.offsetWidth; moon.classList.add('struck'); }
+  setTimeout(() => { flash.classList.remove('active'); moon && moon.classList.remove('struck'); }, 1200);
+}
+function spawnCrowNow() {
+  const host = $('#crowHost');
+  if (!host) return;
+  const c = document.createElement('div');
+  c.className = 'crow';
+  c.innerHTML = `<svg viewBox="0 0 40 24" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="20" cy="14" rx="5.5" ry="2.4"/>
+    <circle cx="14" cy="13" r="2.4"/>
+    <path d="M 11.5 13 L 8.5 13.5 L 11.5 14 Z"/>
+    <path d="M 20 12 L 8 4 Q 14 9 18 11 Z"/>
+    <path d="M 20 12 L 32 4 Q 26 9 22 11 Z"/>
+  </svg>`;
+  c.style.animation = 'crowWingBeat 0.32s ease-in-out infinite alternate, crowFlyPath 8.5s linear forwards';
+  host.appendChild(c);
+  setTimeout(() => c.remove(), 9000);
+}
+
 // konami code → cursor becomes ryuk holding an apple for 10s
 function initKonami() {
   const SEQ = ['arrowup','arrowup','arrowdown','arrowdown','arrowleft','arrowright','arrowleft','arrowright','b','a'];
@@ -2010,6 +2152,7 @@ runBoot().then(() => {
   initCrow();
   initThunder();
   initKonami();
+  initCmdK();
   initParallax();
   initConstellation();
   initComets();
