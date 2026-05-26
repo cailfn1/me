@@ -1151,39 +1151,121 @@ function initShootingStars() {
   setTimeout(loop, 3500);
 }
 
+// persistent counter of petals dropped (per device)
+const PETAL_KEY = 'cails-bio:petals-fallen';
+let __petalCount = 0;
+try { __petalCount = parseInt(localStorage.getItem(PETAL_KEY) || '0', 10) || 0; } catch {}
+
+function bumpPetalCount(n = 1) {
+  __petalCount += n;
+  const el = document.getElementById('petalCount');
+  if (el) el.textContent = __petalCount.toLocaleString();
+  try { localStorage.setItem(PETAL_KEY, String(__petalCount)); } catch {}
+}
+
+function spawnPetalAt(originX, originY, opts = {}) {
+  const host = $('#petals');
+  if (!host) return;
+  const p = document.createElement('div');
+  p.className = 'petal';
+  const drift = opts.drift !== undefined ? opts.drift : -(120 + Math.random() * 280);
+  const dur   = opts.dur   !== undefined ? opts.dur   : (13 + Math.random() * 9);
+  const size  = opts.size  !== undefined ? opts.size  : (11 + Math.random() * 8);
+  const tilt  = Math.random() * 360;
+  p.style.left = originX + 'vw';
+  p.style.top  = originY + 'vh';
+  p.style.width  = size + 'px';
+  p.style.height = (size * 1.25).toFixed(1) + 'px';
+  p.style.setProperty('--drift', drift + 'px');
+  p.style.setProperty('--dur', dur + 's');
+  p.style.setProperty('--start-rot', tilt + 'deg');
+  host.appendChild(p);
+  setTimeout(() => p.remove(), dur * 1000 + 600);
+  bumpPetalCount(1);
+}
+
 function initPetals() {
   const host = $('#petals');
   if (!host) return;
-  function spawn() {
-    const p = document.createElement('div');
-    p.className = 'petal';
-    // spawn from tree area (top-right region of viewport)
-    const startX = 58 + Math.random() * 40; // 58vw - 98vw
-    const startY = Math.random() * 18;       // top 18vh
-    const drift  = -(120 + Math.random() * 280); // leftward drift as they fall
-    const dur    = 13 + Math.random() * 9;       // 13-22s slow fall
-    const size   = 11 + Math.random() * 8;       // 11-19px
-    const tilt   = (Math.random() * 360);
-    p.style.left = startX + 'vw';
-    p.style.top  = startY + 'vh';
-    p.style.width  = size + 'px';
-    p.style.height = (size * 1.25).toFixed(1) + 'px';
-    p.style.setProperty('--drift', drift + 'px');
-    p.style.setProperty('--dur', dur + 's');
-    p.style.setProperty('--start-rot', tilt + 'deg');
-    host.appendChild(p);
-    setTimeout(() => p.remove(), dur * 1000 + 600);
+
+  function ambient() {
+    const startX = 58 + Math.random() * 40;
+    const startY = Math.random() * 18;
+    spawnPetalAt(startX, startY);
   }
-  // seed a few in the air immediately so it doesn't look empty on load
-  for (let i = 0; i < 4; i++) {
-    setTimeout(spawn, i * 900 + 300);
-  }
+
+  // seed a few in air immediately on load
+  for (let i = 0; i < 4; i++) setTimeout(ambient, i * 900 + 300);
+
   function loop() {
-    spawn();
-    const next = 2200 + Math.random() * 3000; // every 2.2-5.2s, multiple in air
-    setTimeout(loop, next);
+    ambient();
+    setTimeout(loop, 2200 + Math.random() * 3000);
   }
   setTimeout(loop, 4200);
+
+  // wind gust: every 25-45s, spawn 6-9 petals at once with shared strong drift
+  function gust() {
+    const sharedDrift = -(220 + Math.random() * 220);
+    const count = 6 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const sx = 60 + Math.random() * 36;
+        const sy = Math.random() * 16;
+        spawnPetalAt(sx, sy, { drift: sharedDrift + (Math.random() - 0.5) * 60, dur: 12 + Math.random() * 6 });
+      }, i * 180);
+    }
+    setTimeout(gust, 25000 + Math.random() * 20000);
+  }
+  setTimeout(gust, 18000);
+
+  // branch click: petal explosion + shake
+  ['tree-branch', 'tree-branch-bl'].forEach(cls => {
+    document.querySelectorAll('.' + cls).forEach(branch => {
+      branch.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        branch.classList.remove('shake');
+        void branch.offsetWidth; // restart animation
+        branch.classList.add('shake');
+        // burst 12-16 petals from the branch area
+        const rect = branch.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        for (let i = 0; i < 14; i++) {
+          setTimeout(() => {
+            const px = ((rect.left + Math.random() * rect.width) / vw) * 100;
+            const py = ((rect.top  + Math.random() * rect.height * 0.6) / vh) * 100;
+            spawnPetalAt(px, py, { drift: (Math.random() - 0.5) * 400, dur: 9 + Math.random() * 5, size: 12 + Math.random() * 8 });
+          }, i * 60);
+        }
+      });
+    });
+  });
+
+  // init counter display
+  bumpPetalCount(0);
+}
+
+// lone crow: flies across the sky every 2-3 minutes
+function initCrow() {
+  const host = $('#crowHost');
+  if (!host) return;
+  function fly() {
+    const c = document.createElement('div');
+    c.className = 'crow';
+    c.innerHTML = `<svg viewBox="0 0 40 24" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="20" cy="14" rx="5.5" ry="2.4"/>
+      <circle cx="14" cy="13" r="2.4"/>
+      <path d="M 11.5 13 L 8.5 13.5 L 11.5 14 Z"/>
+      <path d="M 20 12 L 8 4 Q 14 9 18 11 Z"/>
+      <path d="M 20 12 L 32 4 Q 26 9 22 11 Z"/>
+    </svg>`;
+    c.style.animation = 'crowWingBeat 0.32s ease-in-out infinite alternate, crowFlyPath 8.5s linear forwards';
+    host.appendChild(c);
+    setTimeout(() => c.remove(), 9000);
+    setTimeout(fly, 130000 + Math.random() * 70000); // 2:10 to 3:20 minutes between
+  }
+  setTimeout(fly, 45000); // first crow after 45s
 }
 
 function initFeathers() {
@@ -1861,6 +1943,7 @@ runBoot().then(() => {
   initShootingStars();
   initFeathers();
   initPetals();
+  initCrow();
   initParallax();
   initConstellation();
   initComets();
