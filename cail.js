@@ -1399,6 +1399,34 @@ function initAmbientParticles() {
   }
 }
 
+// downsample dante to ~32px on an offscreen canvas → upscale with nearest-neighbor in CSS for true pixel-art vibe
+function pixelateDante() {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    const PX = 32; // chunky pixel resolution
+    const c = document.createElement('canvas');
+    c.width = PX;
+    c.height = PX;
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    // crop tight to dante's face (upper-center of the original frame)
+    const w = img.width;
+    const h = img.height;
+    const cropSize = Math.min(w, h * 0.6);
+    const sx = (w - cropSize) / 2;
+    const sy = h * 0.08;
+    ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, PX, PX);
+    try {
+      const url = c.toDataURL('image/png');
+      document.documentElement.style.setProperty('--dante-pixel', `url("${url}")`);
+    } catch (e) {
+      // canvas tainted by cors — fallback (shouldn't happen, same-origin)
+    }
+  };
+  img.src = 'assets/dante.jpg';
+}
+
 function initCursor() {
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   if (!fine || reducedMotion) return;
@@ -1785,6 +1813,7 @@ runBoot().then(() => {
   initConstellation();
   initComets();
   initJackpot();
+  pixelateDante();
   initAudioViz();
   initSnake();
   initSounds();
