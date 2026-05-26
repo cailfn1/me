@@ -1,0 +1,1466 @@
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+const pad = (n, size = 2) => n.toString().padStart(size, '0');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function runBoot() {
+  const bootEl = $('#boot');
+  const status = $('#bootStatus');
+  const isFirstVisit = sessionStorage.getItem('cails-bio:booted') !== '1';
+  const minWait = isFirstVisit ? 2200 : 900;
+
+  return new Promise((resolve) => {
+    if (reducedMotion) {
+      sessionStorage.setItem('cails-bio:booted', '1');
+      bootEl.classList.add('fade');
+      setTimeout(() => { bootEl.remove(); resolve(); }, 200);
+      return;
+    }
+
+    setTimeout(() => {
+      if (isFirstVisit) {
+        status.innerHTML = 'click anywhere to continue';
+        bootEl.classList.add('clickable');
+
+        const onEnter = (e) => {
+          if (e.type === 'keydown' && (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta')) return;
+          bootEl.removeEventListener('click', onEnter);
+          window.removeEventListener('keydown', onEnter);
+          sessionStorage.setItem('cails-bio:booted', '1');
+          try {
+            if (typeof getCtx === 'function') getCtx();
+          } catch {}
+
+          bootEl.classList.add('fade');
+          setTimeout(() => { bootEl.remove(); resolve(); }, 500);
+        };
+
+        bootEl.addEventListener('click', onEnter);
+        window.addEventListener('keydown', onEnter);
+      } else {
+        sessionStorage.setItem('cails-bio:booted', '1');
+        bootEl.classList.add('fade');
+        setTimeout(() => { bootEl.remove(); resolve(); }, 500);
+      }
+    }, minWait);
+  });
+}
+
+function startClock() {
+  const clockEl = $('#clock');
+  const update = () => {
+    const d = new Date();
+    let h = d.getHours();
+    const ampm = h >= 12 ? 'pm' : 'am';
+    h = h % 12 || 12;
+    clockEl.textContent = `${pad(h)}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${ampm}`;
+  };
+  update();
+  setInterval(update, 1000);
+}
+
+function setGreeting() {
+  const tagline = $('#tagline');
+  if (!tagline) return;
+  const h = new Date().getHours();
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
+  let greeting;
+  if (h < 5) greeting = 'late-night gamer';
+  else if (h < 12) greeting = 'good morning ☕';
+  else if (h < 17) greeting = 'afternoon vibes';
+  else if (h < 21) greeting = 'evening hours';
+  else greeting = 'just some guy (night shift)';
+  tagline.textContent = `${greeting} · California`;
+  tagline.dataset.original = greeting;
+}
+const TRACKS = [
+  { title: 'aventure — lofi chill', src: 'assets/aventure-lofi-chill-nostalgic-469629.mp3' },
+  { title: 'lofi dreams — lofi jazz', src: 'assets/lofidreams-lofi-jazz-music-485312.mp3' },
+];
+
+let trackIdx = 0;
+
+function loadTrack(i) {
+  const audio = $('#musicAudio');
+  const titleEl = $('#musicTitle');
+  trackIdx = ((i % TRACKS.length) + TRACKS.length) % TRACKS.length;
+  const t = TRACKS[trackIdx];
+  audio.src = t.src;
+  titleEl.textContent = t.title;
+  $('#musicBarFill').style.width = '0%';
+}
+
+function initMusic() {
+  const audio = $('#musicAudio');
+  const btn = $('#musicBtn');
+  const icon = $('#musicIcon');
+  const prev = $('#musicPrev');
+  const next = $('#musicNext');
+  const vol = $('#musicVolume');
+  const barFill = $('#musicBarFill');
+
+  const PLAY = '▶';
+  const PAUSE = '⏸';
+
+  loadTrack(0);
+  audio.volume = 0.5;
+
+  // try to autoplay on first user interaction (browsers block raw autoplay)
+  let autoplayed = false;
+  const tryAutoplay = () => {
+    if (autoplayed || !audio.paused) return;
+    autoplayed = true;
+    const p = audio.play();
+    if (p && typeof p.then === 'function') {
+      p.then(() => {
+        icon.textContent = PAUSE;
+        btn.setAttribute('aria-label', 'pause');
+      }).catch(() => { autoplayed = false; });
+    }
+    cleanup();
+  };
+  const cleanup = () => {
+    window.removeEventListener('click', tryAutoplay);
+    window.removeEventListener('keydown', tryAutoplay);
+    window.removeEventListener('touchstart', tryAutoplay);
+    window.removeEventListener('scroll', tryAutoplay);
+  };
+  window.addEventListener('click', tryAutoplay);
+  window.addEventListener('keydown', tryAutoplay);
+  window.addEventListener('touchstart', tryAutoplay, { passive: true });
+  window.addEventListener('scroll', tryAutoplay, { passive: true });
+
+  btn.addEventListener('click', () => {
+    if (audio.paused) {
+      const p = audio.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(() => { icon.textContent = PLAY; });
+      }
+      icon.textContent = PAUSE;
+      btn.setAttribute('aria-label', 'pause');
+    } else {
+      audio.pause();
+      icon.textContent = PLAY;
+      btn.setAttribute('aria-label', 'play');
+    }
+  });
+
+  prev.addEventListener('click', () => {
+    const wasPlaying = !audio.paused;
+    loadTrack(trackIdx - 1);
+    if (wasPlaying) audio.play().catch(() => {});
+  });
+
+  next.addEventListener('click', () => {
+    const wasPlaying = !audio.paused;
+    loadTrack(trackIdx + 1);
+    if (wasPlaying) audio.play().catch(() => {});
+  });
+
+  vol.addEventListener('input', () => {
+    audio.volume = vol.value / 100;
+  });
+
+  audio.addEventListener('timeupdate', () => {
+    if (audio.duration) {
+      barFill.style.width = (audio.currentTime / audio.duration * 100) + '%';
+    }
+  });
+
+  audio.addEventListener('ended', () => {
+    // auto-advance to next track
+    loadTrack(trackIdx + 1);
+    audio.play().catch(() => {
+      icon.textContent = PLAY;
+      btn.setAttribute('aria-label', 'play');
+    });
+  });
+
+  audio.addEventListener('error', () => {
+    icon.textContent = PLAY;
+    btn.setAttribute('aria-label', 'play');
+    setEqPlaying(false);
+  });
+
+  // EQ bars react to actual play/pause state
+  audio.addEventListener('play', () => setEqPlaying(true));
+  audio.addEventListener('pause', () => setEqPlaying(false));
+  audio.addEventListener('ended', () => setEqPlaying(false));
+}
+
+function setEqPlaying(on) {
+  const eq = $('#musicEq');
+  if (!eq) return;
+  eq.classList.toggle('playing', !!on);
+}
+
+const COUNTER_READ = 'https://api.counterapi.dev/v1/caillove/v2/';
+const COUNTER_UP   = 'https://api.counterapi.dev/v1/caillove/v2/up';
+const LS_COUNTED   = 'cails-bio:counted-v2';
+
+function animateCount(target) {
+  const el = $('#visitorCount');
+  if (!el) return;
+  // set the final value first so it's correct even if RAF never fires
+  // (background tabs pause RAF; without this the count would never show)
+  el.textContent = target.toLocaleString();
+  if (target === 0 || document.hidden || reducedMotion) return;
+  const duration = 1200;
+  const start = performance.now();
+  const step = (now) => {
+    const progress = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(ease * target);
+    el.textContent = current.toLocaleString();
+    if (progress < 1) requestAnimationFrame(step);
+    else el.textContent = target.toLocaleString();
+  };
+  // start from 0 for the count-up effect
+  el.textContent = '0';
+  requestAnimationFrame(step);
+}
+
+function initVisitorCounter() {
+  const alreadyCounted = localStorage.getItem(LS_COUNTED) === '1';
+  const url = alreadyCounted ? COUNTER_READ : COUNTER_UP;
+  fetch(url, { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(data => {
+      const n = data?.count ?? data?.value;
+      if (typeof n === 'number') {
+        animateCount(n);
+        if (!alreadyCounted) localStorage.setItem(LS_COUNTED, '1');
+      } else {
+        throw new Error('no count in response');
+      }
+    })
+    .catch((err) => {
+      const el = $('#visitorCount');
+      if (el) el.textContent = '—';
+      console.warn('visitor counter failed:', err);
+    });
+}
+
+function typeBio() {
+  const el = $('#bioText');
+  if (!el) return;
+  const text = el.getAttribute('data-text') || '';
+  if (reducedMotion) {
+    el.textContent = text;
+    el.classList.add('done');
+    return;
+  }
+  let i = 0;
+  const step = () => {
+    if (i <= text.length) {
+      el.textContent = text.slice(0, i);
+      i++;
+      setTimeout(step, 25);
+    } else {
+      el.classList.add('done');
+    }
+  };
+  setTimeout(step, 400);
+}
+
+function initKonami() {
+  const code = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+  const buffer = [];
+  window.addEventListener('keydown', (e) => {
+    // ignore when typing into inputs/textarea
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    buffer.push(e.key);
+    if (buffer.length > code.length) buffer.shift();
+    if (buffer.length === code.length && buffer.every((k, i) => k.toLowerCase() === code[i].toLowerCase())) {
+      triggerConfetti();
+      console.log('%c> hello fellow gamer', 'color:#7289da;font-family:monospace;font-size:14px');
+      buffer.length = 0;
+    }
+  });
+}
+
+function triggerConfetti() {
+  const colors = ['#7289da', '#43b581', '#e84a4a', '#f1c40f', '#0088cc', '#e8e8e8'];
+  for (let i = 0; i < 40; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.background = colors[i % colors.length];
+    piece.style.animationDuration = (1.8 + Math.random() * 1.6) + 's';
+    piece.style.animationDelay = (Math.random() * 0.4) + 's';
+    piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 4000);
+  }
+}
+
+function initAvatarStreak() {
+  const avatar = $('#avatar');
+  const tagline = $('#tagline');
+  if (!avatar || !tagline) return;
+  let clicks = 0;
+  let resetTimer = null;
+  let restoreTimer = null;
+
+  avatar.addEventListener('click', () => {
+    clicks++;
+    clearTimeout(resetTimer);
+    resetTimer = setTimeout(() => { clicks = 0; }, 2000);
+
+    if (clicks >= 5) {
+      clicks = 0;
+      avatar.classList.add('offline');
+      const original = tagline.textContent;
+      tagline.textContent = 'now offline';
+      clearTimeout(restoreTimer);
+      restoreTimer = setTimeout(() => {
+        avatar.classList.remove('offline');
+        tagline.textContent = original;
+      }, 4000);
+    }
+  });
+}
+
+// requires the user to join https://discord.gg/lanyard
+// if not joined, this silently falls back to the static profile.
+// Discord public_flags bitfield → badge icon hashes (Discord CDN)
+const DISCORD_BADGES = [
+  { flag: 1 << 0,  name: 'Discord Staff',                  hash: '5e74e9b61934fc1f67c65515d1f7e60d' },
+  { flag: 1 << 1,  name: 'Partner',                        hash: '3f9748e53446a137a052f3454e2de41e' },
+  { flag: 1 << 2,  name: 'HypeSquad Events',               hash: 'bf01d1073931f921909045f3a39fd264' },
+  { flag: 1 << 3,  name: 'Bug Hunter Level 1',             hash: '2717692c7dca7289b35297368a940dd0' },
+  { flag: 1 << 6,  name: 'HypeSquad Bravery',              hash: '8a88d63823d8a71cd5e390baa45efa02' },
+  { flag: 1 << 7,  name: 'HypeSquad Brilliance',           hash: '011940fd013da3f7fb926e4a1cd2e618' },
+  { flag: 1 << 8,  name: 'HypeSquad Balance',              hash: '3aa41de486fa12454c3761e8e223442e' },
+  { flag: 1 << 9,  name: 'Early Supporter',                hash: '7060786766c9c840eb3019e725d2b358' },
+  { flag: 1 << 14, name: 'Bug Hunter Level 2',             hash: '848f79194d4be5ff5f81505cbd0ce1e6' },
+  { flag: 1 << 17, name: 'Early Verified Bot Developer',   hash: '6df5892e0f35b051f8b61eace34f4967' },
+  { flag: 1 << 18, name: 'Moderator Programs Alumni',      hash: 'fee1624003e2fee35cb398e125dc479b' },
+  { flag: 1 << 22, name: 'Active Developer',               hash: '6bdc42827a38498929a4920da12695d9' },
+];
+const NITRO_BADGE_HASH = '2ba85e8026a8614b640c2837bcdfe21b';
+
+// Manually-added badges (Lanyard doesn't expose Nitro/Quest reliably)
+const QUEST_BADGE_HASH = '7d9ae358c8c5e118768335dbe68b4fb8';
+const MANUAL_BADGES = [
+  { name: 'Completed a Quest', hash: QUEST_BADGE_HASH },
+];
+
+function renderDiscordBadges(user) {
+  const wrap = $('#discordBadges');
+  if (!wrap || !user) return;
+  wrap.innerHTML = '';
+  const addBadge = (name, hash) => {
+    const img = document.createElement('img');
+    img.src = `https://cdn.discordapp.com/badge-icons/${hash}.png`;
+    img.alt = name;
+    img.title = name;
+    img.loading = 'lazy';
+    img.onerror = () => img.remove();
+    wrap.appendChild(img);
+  };
+  const flags = user.public_flags || 0;
+  DISCORD_BADGES.forEach(b => {
+    if (flags & b.flag) addBadge(b.name, b.hash);
+  });
+  // Nitro — detect via avatar_decoration_data presence (decorations are Nitro-only)
+  // OR premium_type if Lanyard ever exposes it
+  const hasNitro = (user.premium_type && user.premium_type > 0) ||
+                   (user.avatar_decoration_data && user.avatar_decoration_data.asset);
+  if (hasNitro) addBadge('Discord Nitro', NITRO_BADGE_HASH);
+  // Manual badges (Quest, etc.)
+  MANUAL_BADGES.forEach(b => addBadge(b.name, b.hash));
+}
+
+function applyDiscordAvatar(user) {
+  if (!user || !user.id || !user.avatar) return;
+  const av = $('#avatar');
+  if (!av) return;
+  const ext = user.avatar.startsWith('a_') ? 'gif' : 'png';
+  const url = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${ext}?size=256`;
+  av.style.backgroundImage = `url('${url}'), linear-gradient(135deg, #2a2d4a, #1a1c2e)`;
+  const deco = $('#avatarDeco');
+  if (deco && user.avatar_decoration_data && user.avatar_decoration_data.asset) {
+    deco.src = `https://cdn.discordapp.com/avatar-decoration-presets/${user.avatar_decoration_data.asset}.png?size=240&passthrough=true`;
+    deco.classList.add('show');
+  } else if (deco) {
+    deco.classList.remove('show');
+    deco.removeAttribute('src');
+  }
+}
+
+function initLanyard() {
+  const id = document.body.dataset.discordId;
+  if (!id) return;
+  const statusDot = $('#statusDot');
+  const avatarEl = $('#avatar');
+  const activity = $('#activity');
+  const activityRow = $('#activityRow');
+  const activityArt = $('#activityArt');
+
+  const applyPresence = (data) => {
+    if (!data) return;
+    const status = data.discord_status || 'offline';
+    statusDot.classList.remove('idle', 'dnd', 'offline');
+    if (status === 'idle') statusDot.classList.add('idle');
+    else if (status === 'dnd') statusDot.classList.add('dnd');
+    else if (status === 'offline') statusDot.classList.add('offline');
+    if (avatarEl) avatarEl.dataset.status = status;
+    if (data.discord_user) {
+      applyDiscordAvatar(data.discord_user);
+      renderDiscordBadges(data.discord_user);
+    }
+    let label = '';
+    let art = '';
+    if (data.listening_to_spotify && data.spotify) {
+      label = `♪ ${data.spotify.song} — ${data.spotify.artist}`;
+      art = data.spotify.album_art_url || '';
+    } else if (Array.isArray(data.activities)) {
+      const game = data.activities.find(a => a.type === 0);
+      const custom = data.activities.find(a => a.type === 4);
+      if (game) label = `▶ ${game.name}`;
+      else if (custom && custom.state) label = custom.state;
+    }
+    const isSpotify = !!(data.listening_to_spotify && data.spotify);
+    if (label) {
+      activity.textContent = label;
+      activity.classList.add('show');
+      if (activityRow) {
+        activityRow.classList.add('show');
+        activityRow.classList.toggle('spotify', isSpotify);
+      }
+      if (activityArt) {
+        if (art) {
+          activityArt.src = art;
+          activityArt.classList.add('show');
+        } else {
+          activityArt.classList.remove('show');
+          activityArt.removeAttribute('src');
+        }
+      }
+    } else {
+      activity.classList.remove('show');
+      if (activityRow) {
+        activityRow.classList.remove('show');
+        activityRow.classList.remove('spotify');
+      }
+      if (activityArt) activityArt.classList.remove('show');
+    }
+  };
+  let ws;
+  let heartbeat;
+  try {
+    ws = new WebSocket('wss://api.lanyard.rest/socket');
+    ws.addEventListener('open', () => {
+      ws.send(JSON.stringify({ op: 2, d: { subscribe_to_id: id } }));
+    });
+    ws.addEventListener('message', (ev) => {
+      const msg = JSON.parse(ev.data);
+      if (msg.op === 1 && msg.d?.heartbeat_interval) {
+        heartbeat = setInterval(() => {
+          try { ws.send(JSON.stringify({ op: 3 })); } catch {}
+        }, msg.d.heartbeat_interval);
+      } else if (msg.t === 'INIT_STATE' || msg.t === 'PRESENCE_UPDATE') {
+        applyPresence(msg.d);
+      }
+    });
+    ws.addEventListener('close', () => clearInterval(heartbeat));
+    ws.addEventListener('error', () => {
+      fetch(`https://api.lanyard.rest/v1/users/${id}`)
+        .then(r => r.json())
+        .then(j => { if (j.success) applyPresence(j.data); })
+        .catch(() => {});
+    });
+  } catch {
+    fetch(`https://api.lanyard.rest/v1/users/${id}`)
+      .then(r => r.json())
+      .then(j => { if (j.success) applyPresence(j.data); })
+      .catch(() => {});
+  }
+}
+
+const TERM_COMMANDS = {
+  help: () => [
+    'available commands:',
+    '  help       — this list',
+    '  about      — short bio',
+    '  whoami     — who am i',
+    '  skills     — list skills',
+    '  projects   — list projects',
+    '  links      — show socials',
+    '  date       — current date/time',
+    '  echo <txt> — echo text back',
+    '  clear      — clear terminal',
+    '  exit / q   — close terminal',
+  ],
+  about: () => [$('#bioText').getAttribute('data-text') || ''],
+  whoami: () => ['cail'],
+  skills: () => ['skills: ' + [...$$('.skill-icon')].map(p => p.getAttribute('title') || p.dataset.label).filter(Boolean).join(', ')],
+  projects: () => [...$$('.work-card')].map(p => {
+    const name = p.querySelector('.work-name')?.textContent || '?';
+    const desc = p.querySelector('.work-desc')?.textContent || '';
+    return `- ${name} — ${desc}`;
+  }),
+  links: () => [...$$('.links-list a')].map(a => {
+    const platform = a.querySelector('.link-platform')?.textContent.trim() || '';
+    const handle = a.querySelector('.link-handle')?.textContent.trim() || '';
+    return `${platform}: ${handle} (${a.href})`;
+  }),
+  date: () => [new Date().toString()],
+  clear: () => { $('#termBody').innerHTML = ''; return null; },
+  exit: () => { closeTerminal(); return null; },
+  q: () => { closeTerminal(); return null; },
+};
+
+function termPrint(line, cls = '') {
+  const div = document.createElement('div');
+  div.className = 'term-line' + (cls ? ' ' + cls : '');
+  div.innerHTML = line;
+  $('#termBody').appendChild(div);
+  $('#termBody').scrollTop = $('#termBody').scrollHeight;
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function runCommand(raw) {
+  const input = raw.trim();
+  if (!input) return;
+  termPrint(`<span class="term-prompt">$</span> ${escapeHtml(input)}`, 'cmd-echo');
+
+  const [cmd, ...rest] = input.split(/\s+/);
+  const arg = rest.join(' ');
+
+  if (cmd === 'echo') {
+    termPrint(escapeHtml(arg) || '');
+    return;
+  }
+  if (cmd === 'sudo' && rest[0] === 'rm' && rest.includes('-rf') && rest.some(r => r === '/' || r === '/*')) {
+    termPrint('permission denied. nice try.', 'error');
+    return;
+  }
+
+  const fn = TERM_COMMANDS[cmd];
+  if (!fn) {
+    termPrint(`unknown command: ${escapeHtml(cmd)} — try <span class="term-cmd">help</span>`, 'error');
+    return;
+  }
+  const out = fn();
+  if (out) out.forEach(l => termPrint(escapeHtml(l)));
+}
+
+let termHistory = [];
+let termHistIdx = -1;
+
+function openTerminal() {
+  const term = $('#terminal');
+  term.hidden = false;
+  $('#termInput').focus();
+}
+
+function closeTerminal() {
+  $('#terminal').hidden = true;
+}
+
+const ANILIST_USER = 'cailfn';
+const ANILIST_CACHE_KEY = 'cails-bio:anilist-cache-v2';
+const ANILIST_CACHE_TTL = 15 * 60 * 1000;
+
+async function fetchAniList(user) {
+  const query = `query ($userName: String) {
+    MediaListCollection(userName: $userName, type: ANIME, status: CURRENT) {
+      lists { entries {
+        progress
+        media {
+          title { romaji english }
+          coverImage { large }
+          episodes
+          siteUrl
+        }
+      } }
+    }
+  }`;
+  const res = await fetch('https://graphql.anilist.co', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ query, variables: { userName: user } }),
+  });
+  if (!res.ok) throw new Error('anilist ' + res.status);
+  const json = await res.json();
+  const lists = json?.data?.MediaListCollection?.lists || [];
+  const entries = lists.flatMap(l => l.entries || []);
+  return entries;
+}
+
+function renderAniList(entries) {
+  const grid = $('#animeGrid');
+  const section = $('#anime');
+  if (!grid) return;
+  if (!entries || entries.length === 0) {
+    grid.innerHTML = '<div class="anime-loading">nothing right now ¯\\_(ツ)_/¯</div>';
+    return;
+  }
+  grid.innerHTML = '';
+  entries.forEach(e => {
+    const title = e.media.title.english || e.media.title.romaji || 'untitled';
+    const cover = e.media.coverImage.large;
+    const total = e.media.episodes || '?';
+    const url = e.media.siteUrl || '#';
+    const a = document.createElement('a');
+    a.className = 'anime-card';
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.innerHTML = `
+      <div class="anime-cover" style="background-image: url('${cover}')"></div>
+      <div class="anime-title">${title.replace(/[<>]/g, '')}</div>
+      <div class="anime-progress">ep ${e.progress} / ${total}</div>
+    `;
+    grid.appendChild(a);
+  });
+}
+
+async function initAniList() {
+  const grid = $('#animeGrid');
+  if (!grid) return;
+  try {
+    const cached = JSON.parse(localStorage.getItem(ANILIST_CACHE_KEY) || 'null');
+    if (cached && Date.now() - cached.t < ANILIST_CACHE_TTL) {
+      renderAniList(cached.entries);
+      return;
+    }
+  } catch {}
+  try {
+    const entries = await fetchAniList(ANILIST_USER);
+    renderAniList(entries);
+    // only cache non-empty results so a temporary empty response doesn't stick
+    if (entries.length > 0) {
+      localStorage.setItem(ANILIST_CACHE_KEY, JSON.stringify({ t: Date.now(), entries }));
+    }
+  } catch (err) {
+    const section = $('#anime');
+    if (section) section.style.display = 'none';
+    console.warn('anilist failed:', err);
+  }
+}
+
+function initTerminal() {
+  const input = $('#termInput');
+  const closeBtn = $('#termClose');
+
+  const isTypingTarget = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA');
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !isTypingTarget(e.target)) {
+      e.preventDefault();
+      openTerminal();
+    }
+    if (e.key === 'Escape' && !$('#terminal').hidden) {
+      closeTerminal();
+    }
+  });
+
+  closeBtn.addEventListener('click', closeTerminal);
+  $('#terminal').addEventListener('click', (e) => {
+    if (e.target.id === 'terminal') closeTerminal();
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeTerminal();
+      return;
+    }
+    if (e.key === 'Enter') {
+      const v = input.value;
+      if (v.trim()) {
+        termHistory.push(v);
+        if (termHistory.length > 50) termHistory.shift();
+      }
+      termHistIdx = termHistory.length;
+      runCommand(v);
+      input.value = '';
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (termHistIdx > 0) {
+        termHistIdx--;
+        input.value = termHistory[termHistIdx];
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (termHistIdx < termHistory.length - 1) {
+        termHistIdx++;
+        input.value = termHistory[termHistIdx];
+      } else {
+        termHistIdx = termHistory.length;
+        input.value = '';
+      }
+    }
+  });
+}
+
+// stored in localStorage by default (per-browser, not global).
+// GUESTBOOK BACKEND: to make it global, replace loadEntries/saveEntries
+// with calls to Firebase, Cusdis, or any JSON backend.
+const LS_GUESTBOOK = 'cails-bio:guestbook';
+const MAX_ENTRIES = 50;
+
+function loadEntries() {
+  try {
+    return JSON.parse(localStorage.getItem(LS_GUESTBOOK) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveEntries(entries) {
+  localStorage.setItem(LS_GUESTBOOK, JSON.stringify(entries.slice(-MAX_ENTRIES)));
+}
+
+function renderGuestbook() {
+  const list = $('#gbList');
+  const entries = loadEntries();
+  list.innerHTML = '';
+  if (entries.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'gb-empty';
+    li.textContent = 'no signatures yet — be the first.';
+    list.appendChild(li);
+    return;
+  }
+  entries.slice().reverse().forEach(e => {
+    const li = document.createElement('li');
+    li.className = 'gb-entry';
+    const when = new Date(e.t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    li.innerHTML = `<span class="gb-author">${escapeHtml(e.n)}</span>${escapeHtml(e.m)}<span class="gb-time">${when}</span>`;
+    list.appendChild(li);
+  });
+}
+
+function initGuestbook() {
+  const form = $('#gbForm');
+  if (!form) return;
+  renderGuestbook();
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#gbName').value.trim().slice(0, 20);
+    const msg = $('#gbMsg').value.trim().slice(0, 120);
+    if (!name || !msg) return;
+    const entries = loadEntries();
+    entries.push({ n: name, m: msg, t: Date.now() });
+    saveEntries(entries);
+    $('#gbMsg').value = '';
+    renderGuestbook();
+  });
+}
+
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch { return null; }
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  return audioCtx;
+}
+
+function beep(freq = 440, duration = 0.06, type = 'square', gain = 0.04) {
+  const ctx = getCtx();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  g.gain.value = 0;
+  g.gain.setValueAtTime(0, ctx.currentTime);
+  g.gain.linearRampToValueAtTime(gain, ctx.currentTime + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+  osc.connect(g).connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + duration);
+}
+
+let _toastTimer = null;
+function showToast(msg) {
+  let el = document.querySelector('.site-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'site-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function triggerLightMode() {
+  document.body.classList.add('light-chaos');
+  showToast('MY EYES 🤕');
+  setTimeout(() => document.body.classList.remove('light-chaos'), 1500);
+}
+
+function triggerConfetti(btn) {
+  const rect = btn.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const colors = ['#7289da','#9b59dc','#3aa5b3','#dc5082','#f7df1e','#ff5e5b'];
+  for (let i = 0; i < 30; i++) {
+    const bit = document.createElement('div');
+    bit.className = 'confetti-bit';
+    bit.style.left = cx + 'px';
+    bit.style.top  = cy + 'px';
+    bit.style.background = colors[Math.floor(Math.random() * colors.length)];
+    const angle = Math.random() * Math.PI * 2;
+    const dist  = 60 + Math.random() * 100;
+    const tx = Math.cos(angle) * dist;
+    const ty = Math.sin(angle) * dist - 40;
+    const rot = (Math.random() - 0.5) * 720 + 'deg';
+    bit.style.setProperty('--tx', `translate(${tx}px, ${ty}px)`);
+    bit.style.setProperty('--rot', rot);
+    bit.style.animationDelay = (Math.random() * 0.15) + 's';
+    document.body.appendChild(bit);
+    setTimeout(() => bit.remove(), 1100);
+  }
+}
+
+function showNoSleep() {
+  const now = new Date();
+  const h = now.getHours().toString().padStart(2, '0');
+  const m = now.getMinutes().toString().padStart(2, '0');
+  showToast(`it's ${h}:${m}. why am i still awake`);
+}
+
+function triggerShuffle() {
+  if (!TRACKS || TRACKS.length === 0) return;
+  let newIdx = Math.floor(Math.random() * TRACKS.length);
+  if (TRACKS.length > 1 && newIdx === trackIdx) {
+    newIdx = (newIdx + 1) % TRACKS.length;
+  }
+  loadTrack(newIdx);
+  const audio = $('#musicAudio');
+  const icon = $('#musicIcon');
+  const p = audio.play();
+  if (p && typeof p.catch === 'function') p.catch(() => {});
+  if (icon) icon.textContent = '⏸';
+  showToast(`now playing: ${TRACKS[newIdx].title}`);
+}
+
+function initStarfield() {
+  const stars = $('#stars');
+  if (!stars) return;
+  stars.innerHTML = '';
+  const count = 380;
+  for (let i = 0; i < count; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left  = (Math.random() * 100).toFixed(2) + 'vw';
+    s.style.top   = (Math.random() * 100).toFixed(2) + 'vh';
+    const roll = Math.random();
+    let size, color, glow;
+    if (roll < 0.04) {
+      // rare big glowy star, sometimes pink tinted
+      size = 3.2;
+      const pinky = Math.random() < 0.4;
+      color = pinky ? '#ffd6e8' : '#ffffff';
+      glow  = pinky ? '0 0 10px rgba(255,180,210,0.85)' : '0 0 8px rgba(255,255,255,0.85)';
+    } else if (roll < 0.2) {
+      size = 2;
+      color = '#ffffff';
+      glow  = '0 0 5px rgba(255,255,255,0.7)';
+    } else {
+      size = Math.random() < 0.5 ? 1.4 : 1;
+      color = '#ffffff';
+      glow  = '0 0 3px rgba(255,255,255,0.55)';
+    }
+    s.style.width  = size + 'px';
+    s.style.height = size + 'px';
+    s.style.background = color;
+    s.style.boxShadow  = glow;
+    s.style.opacity = (Math.random() * 0.55 + 0.45).toFixed(2);
+    s.style.animationDelay = (Math.random() * 6).toFixed(1) + 's';
+    s.style.animationDuration = (3.5 + Math.random() * 5).toFixed(1) + 's';
+    stars.appendChild(s);
+  }
+}
+
+function initWebBtns() {
+  document.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      switch (btn.dataset.action) {
+        case 'lightmode': triggerLightMode();             break;
+        case 'confetti':  triggerConfetti(btn);           break;
+        case 'terminal':  openTerminal();                 break;
+        case 'toast':     showToast(btn.dataset.msg);     break;
+        case 'nosleep':   showNoSleep();                  break;
+        case 'snake':     openGame();                     break;
+        case 'shuffle':   triggerShuffle();               break;
+        case 'hint':      showToast('there are hidden things. press / and type help'); break;
+      }
+    });
+  });
+}
+
+function initSounds() {
+  // first interaction unlocks audio context (browser autoplay policies)
+  let unlocked = false;
+  const unlock = () => { if (!unlocked) { getCtx(); unlocked = true; } };
+  window.addEventListener('pointerdown', unlock, { once: true });
+  window.addEventListener('keydown', unlock, { once: true });
+
+  // soft hover tick
+  $$('a, button, .skill-icon, .work-card, .avatar').forEach(el => {
+    el.addEventListener('mouseenter', () => beep(880, 0.03, 'sine', 0.015));
+  });
+  // crisper click
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('a, button, .skill-icon, .work-card, .avatar')) {
+      beep(440, 0.05, 'square', 0.03);
+    }
+  });
+}
+
+function initMatrixRain() {
+  const canvas = $('#matrixCanvas');
+  if (!canvas || reducedMotion) return;
+  const ctx = canvas.getContext('2d', { alpha: true });
+
+  // characters: katakana + binary + some symbols for variety
+  const KATA = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+  const DIGITS = '0123456789';
+  const SYMS = '∆∇∑∏√∫≈≠≤≥<>{}[]/\\';
+  const POOL = KATA + KATA + DIGITS + SYMS;
+
+  // tuning
+  const FONT_SIZE = 16;
+  const FALL_SPEED = 0.55;
+  const SPIKE_SPEED = 1.4;          // fast meteor columns
+  const SPIKE_CHANCE = 0.04;        // % of columns that are spikes
+  const TRAIL_FADE = 0.09;          // higher = shorter trails (uses destination-out so canvas stays transparent)
+  const ACTIVE_RATE = 0.78;         // % of frames a column emits (higher = denser)
+  const REPEL_RADIUS = 140;         // px — columns near cursor dim
+  const LEAD_BRIGHT = 'rgba(190, 210, 255, 0.7)';
+  const TAIL_COLOR  = 'rgba(114, 137, 218, 0.45)';
+  const SPIKE_LEAD  = 'rgba(220, 230, 255, 0.95)';
+  const SPIKE_TAIL  = 'rgba(150, 170, 235, 0.65)';
+
+  let cols = 0;
+  let drops = [], spikes = [], prevChar = [];
+  let mouseX = -9999, mouseY = -9999;
+
+  window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+  window.addEventListener('mouseleave', () => { mouseX = -9999; mouseY = -9999; });
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cols = Math.ceil(window.innerWidth / FONT_SIZE);
+    drops = new Array(cols).fill(0).map(() => Math.random() * (window.innerHeight / FONT_SIZE));
+    spikes = new Array(cols).fill(false).map(() => Math.random() < SPIKE_CHANCE);
+    prevChar = new Array(cols).fill('');
+    ctx.font = `${FONT_SIZE}px 'JetBrains Mono', monospace`;
+    ctx.textBaseline = 'top';
+  }
+  resize();
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resize, 120);
+  });
+
+  function frame() {
+    // transparent fade — subtracts alpha so blobs behind show through
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = `rgba(0, 0, 0, ${TRAIL_FADE})`;
+    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+    ctx.globalCompositeOperation = 'source-over';
+
+    ctx.font = `${FONT_SIZE}px 'JetBrains Mono', monospace`;
+
+    for (let i = 0; i < cols; i++) {
+      const isSpike = spikes[i];
+      const speed = isSpike ? SPIKE_SPEED : FALL_SPEED;
+
+      // skip some columns for sparser texture
+      if (!isSpike && Math.random() > ACTIVE_RATE) {
+        drops[i] += speed;
+        continue;
+      }
+
+      const ch = POOL[(Math.random() * POOL.length) | 0];
+      const x = i * FONT_SIZE;
+      const y = drops[i] * FONT_SIZE;
+
+      // mouse repulsion — dim columns near the cursor
+      const dx = x - mouseX;
+      const dy = y - mouseY;
+      const dist = Math.hypot(dx, dy);
+      const repel = dist < REPEL_RADIUS ? (dist / REPEL_RADIUS) : 1;   // 0..1
+      const alphaScale = 0.3 + 0.7 * repel;
+
+      // tail (previous char position, muted color)
+      if (prevChar[i]) {
+        const tailBase = isSpike ? SPIKE_TAIL : TAIL_COLOR;
+        ctx.fillStyle = scaleAlpha(tailBase, alphaScale);
+        ctx.fillText(prevChar[i], x, y - FONT_SIZE);
+      }
+
+      // lead char — with glow on spikes for that meteor look
+      const leadBase = isSpike ? SPIKE_LEAD : LEAD_BRIGHT;
+      ctx.fillStyle = scaleAlpha(leadBase, alphaScale);
+      if (isSpike) {
+        ctx.shadowColor = 'rgba(180, 200, 255, 0.9)';
+        ctx.shadowBlur = 8;
+      }
+      ctx.fillText(ch, x, y);
+      if (isSpike) ctx.shadowBlur = 0;
+
+      prevChar[i] = ch;
+      drops[i] += speed;
+
+      // reset off-screen
+      if (y > window.innerHeight && Math.random() > (isSpike ? 0.96 : 0.974)) {
+        drops[i] = -Math.random() * 20;
+        prevChar[i] = '';
+        // occasionally re-roll spike status when resetting
+        if (Math.random() < 0.15) spikes[i] = Math.random() < SPIKE_CHANCE;
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+// helper: multiply the alpha of an "rgba(r, g, b, a)" string by a factor
+function scaleAlpha(rgba, factor) {
+  const m = rgba.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
+  if (!m) return rgba;
+  const a = (m[4] !== undefined ? parseFloat(m[4]) : 1) * factor;
+  return `rgba(${m[1]}, ${m[2]}, ${m[3]}, ${a.toFixed(3)})`;
+}
+
+function initAmbientParticles() {
+  if (reducedMotion) return;
+  const COUNT = 32;
+  // ~75% warm white, ~25% accent blurple, occasional teal
+  const colors = [
+    { rgb: '255, 255, 255', weight: 0.75 },
+    { rgb: '160, 180, 240', weight: 0.20 },
+    { rgb: '120, 200, 210', weight: 0.05 },
+  ];
+  function pickColor() {
+    const r = Math.random();
+    let acc = 0;
+    for (const c of colors) { acc += c.weight; if (r < acc) return c.rgb; }
+    return colors[0].rgb;
+  }
+
+  for (let i = 0; i < COUNT; i++) {
+    const p = document.createElement('div');
+    p.className = 'ambient-particle';
+    const startX = Math.random() * 100;            // vw
+    const drift = (Math.random() - 0.5) * 100;     // px sideways drift
+    const dur = 20 + Math.random() * 22;           // 20–42s (slower, meditative)
+    const delay = -Math.random() * dur;
+    const size = 1.5 + Math.random() * 3.5;        // 1.5–5px
+    const opacity = 0.35 + Math.random() * 0.55;
+    const colorRgb = pickColor();
+    const glowR = (size * 4).toFixed(0);
+
+    p.style.left = startX + 'vw';
+    p.style.width = p.style.height = size.toFixed(1) + 'px';
+    p.style.setProperty('--drift', drift.toFixed(0) + 'px');
+    p.style.animationDuration = dur.toFixed(1) + 's';
+    p.style.animationDelay = delay.toFixed(1) + 's';
+    p.style.background = `rgba(${colorRgb}, ${opacity.toFixed(2)})`;
+    p.style.boxShadow = `0 0 ${glowR}px rgba(${colorRgb}, ${(opacity * 0.7).toFixed(2)})`;
+    document.body.appendChild(p);
+  }
+}
+
+function initCursor() {
+  const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (!fine || reducedMotion) return;
+
+  const dot = document.createElement('div');
+  dot.className = 'cursor-dot hidden';
+  document.body.appendChild(dot);
+
+  let mx = window.innerWidth / 2;
+  let my = window.innerHeight / 2;
+  let dx = mx;
+  let dy = my;
+  let lastTrail = 0;
+  const TRAIL_INTERVAL = 55;
+
+  function frame() {
+    dx += (mx - dx) * 0.32;
+    dy += (my - dy) * 0.32;
+    dot.style.transform = `translate3d(${dx}px, ${dy}px, 0) translate(-50%, -50%)` + (dot.classList.contains('click') ? ' scale(1.3)' : '');
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  function spawnTrail(x, y) {
+    const t = document.createElement('div');
+    t.className = 'cursor-trail';
+    t.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 700);
+  }
+
+  function spawnHeartBurst(x, y) {
+    const count = 5;
+    for (let i = 0; i < count; i++) {
+      const h = document.createElement('div');
+      h.className = 'heart-burst';
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
+      const distance = 40 + Math.random() * 40;
+      const tx = Math.cos(angle) * distance;
+      const ty = Math.sin(angle) * distance;
+      h.style.left = x + 'px';
+      h.style.top = y + 'px';
+      h.style.setProperty('--tx', tx + 'px');
+      h.style.setProperty('--ty', ty + 'px');
+      h.style.setProperty('--rot', (Math.random() * 60 - 30) + 'deg');
+      document.body.appendChild(h);
+      setTimeout(() => h.remove(), 750);
+    }
+  }
+
+  window.addEventListener('mousemove', (e) => {
+    mx = e.clientX;
+    my = e.clientY;
+    dot.classList.remove('hidden');
+
+    const now = performance.now();
+    if (now - lastTrail > TRAIL_INTERVAL) {
+      spawnTrail(mx, my);
+      lastTrail = now;
+    }
+  });
+
+  document.addEventListener('mouseleave', () => dot.classList.add('hidden'));
+  document.addEventListener('mouseenter', () => dot.classList.remove('hidden'));
+
+  window.addEventListener('mousedown', (e) => {
+    dot.classList.add('click');
+    const tag = e.target.tagName;
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+      spawnHeartBurst(e.clientX, e.clientY);
+    }
+  });
+  window.addEventListener('mouseup', () => dot.classList.remove('click'));
+}
+
+const LS_LEADERBOARD = 'cails-bio:snake-leaderboard';
+const SNAKE_GRID = 20;       // cells per side
+const SNAKE_TICK = 110;      // ms per move (lower = faster)
+const SNAKE_TICK_MIN = 60;   // floor for speed-up
+
+const snakeState = {
+  running: false,
+  loop: null,
+  tick: SNAKE_TICK,
+  dir: { x: 1, y: 0 },
+  nextDir: { x: 1, y: 0 },
+  snake: [],
+  food: { x: 10, y: 10 },
+  score: 0,
+  cell: 20,
+  ctx: null,
+};
+
+function loadLeaderboard() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LS_LEADERBOARD) || '[]');
+    return Array.isArray(raw) ? raw : [];
+  } catch { return []; }
+}
+
+function saveLeaderboard(list) {
+  localStorage.setItem(LS_LEADERBOARD, JSON.stringify(list.slice(0, 5)));
+}
+
+function renderLeaderboard(highlightIdx = -1) {
+  const list = $('#lbList');
+  if (!list) return;
+  const entries = loadLeaderboard();
+  list.innerHTML = '';
+  if (entries.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'lb-empty';
+    li.textContent = 'no scores yet — be the first.';
+    list.appendChild(li);
+    return;
+  }
+  entries.forEach((e, i) => {
+    const li = document.createElement('li');
+    if (i === highlightIdx) li.classList.add('you');
+    li.innerHTML = `<span class="lb-name">${escapeHtml(e.n)}</span><span class="lb-score">${e.s}</span>`;
+    list.appendChild(li);
+  });
+}
+
+function addScore(name, score) {
+  const entries = loadLeaderboard();
+  entries.push({ n: name.toUpperCase().slice(0, 3) || '???', s: score });
+  entries.sort((a, b) => b.s - a.s);
+  const trimmed = entries.slice(0, 5);
+  saveLeaderboard(trimmed);
+  const idx = trimmed.findIndex(e => e.n === name.toUpperCase().slice(0, 3) && e.s === score);
+  renderLeaderboard(idx);
+}
+
+function snakeRandomFood() {
+  const taken = new Set(snakeState.snake.map(s => `${s.x},${s.y}`));
+  let x, y, tries = 0;
+  do {
+    x = Math.floor(Math.random() * SNAKE_GRID);
+    y = Math.floor(Math.random() * SNAKE_GRID);
+    tries++;
+  } while (taken.has(`${x},${y}`) && tries < 200);
+  snakeState.food = { x, y };
+}
+
+function snakeDraw() {
+  const { ctx, cell, snake, food } = snakeState;
+  if (!ctx) return;
+  const w = SNAKE_GRID * cell;
+  // bg
+  ctx.fillStyle = '#07070a';
+  ctx.fillRect(0, 0, w, w);
+  // subtle grid
+  ctx.strokeStyle = 'rgba(114, 137, 218, 0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < SNAKE_GRID; i++) {
+    ctx.beginPath(); ctx.moveTo(i * cell, 0); ctx.lineTo(i * cell, w); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i * cell); ctx.lineTo(w, i * cell); ctx.stroke();
+  }
+  // food (glowing dot)
+  ctx.fillStyle = '#e84a4a';
+  ctx.shadowColor = '#e84a4a';
+  ctx.shadowBlur = 12;
+  ctx.fillRect(food.x * cell + 3, food.y * cell + 3, cell - 6, cell - 6);
+  ctx.shadowBlur = 0;
+  // snake
+  snake.forEach((seg, i) => {
+    const isHead = i === 0;
+    ctx.fillStyle = isHead ? '#8ea1e1' : '#7289da';
+    if (isHead) {
+      ctx.shadowColor = '#7289da';
+      ctx.shadowBlur = 14;
+    }
+    ctx.fillRect(seg.x * cell + 1, seg.y * cell + 1, cell - 2, cell - 2);
+    ctx.shadowBlur = 0;
+  });
+}
+
+function snakeStep() {
+  const s = snakeState;
+  s.dir = s.nextDir;
+  const head = { x: s.snake[0].x + s.dir.x, y: s.snake[0].y + s.dir.y };
+
+  // wall collision
+  if (head.x < 0 || head.x >= SNAKE_GRID || head.y < 0 || head.y >= SNAKE_GRID) {
+    snakeGameOver();
+    return;
+  }
+  // self collision
+  if (s.snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+    snakeGameOver();
+    return;
+  }
+  s.snake.unshift(head);
+
+  if (head.x === s.food.x && head.y === s.food.y) {
+    s.score++;
+    $('#snakeScore').textContent = s.score;
+    beep(660 + s.score * 12, 0.05, 'square', 0.05);
+    snakeRandomFood();
+    // speed up slightly every 3 foods
+    if (s.score % 3 === 0 && s.tick > SNAKE_TICK_MIN) {
+      s.tick = Math.max(SNAKE_TICK_MIN, s.tick - 6);
+      clearInterval(s.loop);
+      s.loop = setInterval(snakeStep, s.tick);
+    }
+  } else {
+    s.snake.pop();
+  }
+  snakeDraw();
+}
+
+function snakeStart() {
+  const s = snakeState;
+  s.snake = [
+    { x: 8, y: 10 },
+    { x: 7, y: 10 },
+    { x: 6, y: 10 },
+  ];
+  s.dir = { x: 1, y: 0 };
+  s.nextDir = { x: 1, y: 0 };
+  s.score = 0;
+  s.tick = SNAKE_TICK;
+  $('#snakeScore').textContent = '0';
+  snakeRandomFood();
+  snakeDraw();
+  s.running = true;
+  $('#gameOverlay').hidden = true;
+  clearInterval(s.loop);
+  s.loop = setInterval(snakeStep, s.tick);
+}
+
+function snakeGameOver() {
+  const s = snakeState;
+  s.running = false;
+  clearInterval(s.loop);
+  beep(180, 0.25, 'sawtooth', 0.06);
+  setTimeout(() => beep(120, 0.4, 'sawtooth', 0.05), 120);
+
+  const overlay = $('#gameOverlay');
+  const title = $('#gameOverlayTitle');
+  const sub = $('#gameOverlaySub');
+  const initials = $('#snakeInitials');
+  const startBtn = $('#gameStart');
+
+  title.textContent = `game over — ${s.score}`;
+  const top = loadLeaderboard();
+  const qualifies = top.length < 5 || s.score > (top[top.length - 1]?.s ?? 0);
+
+  if (s.score > 0 && qualifies) {
+    sub.textContent = 'new high score! enter initials';
+    initials.hidden = false;
+    initials.value = '';
+    startBtn.textContent = 'submit & play again';
+    overlay.hidden = false;
+    setTimeout(() => initials.focus(), 50);
+  } else {
+    sub.textContent = 'press space or click to retry';
+    initials.hidden = true;
+    startBtn.textContent = 'play again';
+    overlay.hidden = false;
+  }
+}
+
+function openGame() {
+  const g = $('#game');
+  g.hidden = false;
+  const overlay = $('#gameOverlay');
+  $('#gameOverlayTitle').textContent = 'ready?';
+  $('#gameOverlaySub').textContent = 'arrows or wasd to move · eat the red pixels';
+  $('#snakeInitials').hidden = true;
+  $('#gameStart').textContent = 'start';
+  overlay.hidden = false;
+  // size the canvas based on layout (keeps it crisp on hi-dpi)
+  const canvas = $('#snakeCanvas');
+  snakeState.ctx = canvas.getContext('2d');
+  snakeState.cell = canvas.width / SNAKE_GRID;
+  snakeDraw();
+}
+
+function closeGame() {
+  $('#game').hidden = true;
+  clearInterval(snakeState.loop);
+  snakeState.running = false;
+}
+
+function initSnake() {
+  const playBtn = $('#snakePlay');
+  const startBtn = $('#gameStart');
+  const closeBtn = $('#gameClose');
+  const initials = $('#snakeInitials');
+
+  if (playBtn) playBtn.addEventListener('click', openGame);
+  if (closeBtn) closeBtn.addEventListener('click', closeGame);
+
+  startBtn.addEventListener('click', () => {
+    if (!initials.hidden && initials.value.trim()) {
+      addScore(initials.value.trim(), snakeState.score);
+    }
+    snakeStart();
+  });
+
+  initials.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      startBtn.click();
+    }
+  });
+
+  // global keybinds for the game
+  window.addEventListener('keydown', (e) => {
+    // 'g' opens the game when not typing
+    if ((e.key === 'g' || e.key === 'G') && $('#game').hidden &&
+        !(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'))) {
+      e.preventDefault();
+      openGame();
+      return;
+    }
+    if ($('#game').hidden) return;
+
+    if (e.key === 'Escape') {
+      closeGame();
+      return;
+    }
+
+    // start / restart with space
+    if ((e.key === ' ' || e.code === 'Space') && !snakeState.running &&
+        e.target !== initials) {
+      e.preventDefault();
+      startBtn.click();
+      return;
+    }
+
+    // ignore movement keys while typing initials
+    if (e.target === initials) return;
+
+    if (!snakeState.running) return;
+    const d = snakeState.dir;
+    let nd = null;
+    if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') && d.y !== 1) nd = { x: 0, y: -1 };
+    else if ((e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') && d.y !== -1) nd = { x: 0, y: 1 };
+    else if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && d.x !== 1) nd = { x: -1, y: 0 };
+    else if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && d.x !== -1) nd = { x: 1, y: 0 };
+    if (nd) {
+      snakeState.nextDir = nd;
+      e.preventDefault();
+    }
+  });
+
+  // click backdrop to close
+  $('#game').addEventListener('click', (e) => {
+    if (e.target.id === 'game') closeGame();
+  });
+
+  renderLeaderboard();
+}
+
+// kick off ambient particles ASAP — aurora is pure CSS, no JS needed
+initAmbientParticles();
+
+runBoot().then(() => {
+  startClock();
+  setGreeting();
+  initMusic();
+  initVisitorCounter();
+  typeBio();
+  initKonami();
+  initAvatarStreak();
+  initLanyard();
+  initAniList();
+  initTerminal();
+  initGuestbook();
+  initWebBtns();
+  initStarfield();
+  initSnake();
+  initSounds();
+  initCursor();
+});
