@@ -1829,7 +1829,6 @@ runBoot().then(() => {
   initConstellation();
   initComets();
   initJackpot();
-  pixelateDante();
   initAudioViz();
   initSnake();
   initSounds();
