@@ -52,21 +52,28 @@ body {
     z-index: 10000;
     transform: translate3d(-50%, -50%, 0);
     will-change: transform, opacity;
-    width: 50px;
-    height: 50px;
+    width: 62px;
+    height: 62px;
     filter:
-      drop-shadow(0 0 5px rgba(180, 30, 70, 0.65))
-      drop-shadow(0 0 14px rgba(80, 10, 35, 0.45))
-      drop-shadow(0 2px 4px rgba(0, 0, 0, 0.75));
+      drop-shadow(0 0 7px rgba(200, 40, 80, 0.75))
+      drop-shadow(0 0 18px rgba(120, 16, 50, 0.55))
+      drop-shadow(0 3px 5px rgba(0, 0, 0, 0.85));
     transition: opacity 0.2s ease;
+    /* very slow sway like the leaf is drifting through the air */
+    animation: leafSway 6s ease-in-out infinite;
   }
 
-  /* anatomical feather quill: curved leaf vane + central shaft + barbs both sides + dark red nib tip near center */
+  @keyframes leafSway {
+    0%, 100% { rotate: -3deg; }
+    50%      { rotate: 3deg; }
+  }
+
+  /* falling leaf: dark autumn shape w/ broken stem + visible veins + crimson outline so it pops on dark bg */
   .cursor-dot::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M17 17 C14 14 10 10 6 5 C4 3 3 2 2 1 C2 3 3 6 5 9 C8 13 12 16 17 17 Z' fill='%230a0408' stroke='%23200818' stroke-width='0.5' stroke-linejoin='round'/%3E%3Cpath d='M17 17 C13 13 9 10 5 6 C3 4 2 2 2 1 C4 2 7 4 10 6 C14 9 16 13 17 17 Z' fill='%23100614' opacity='0.85'/%3E%3Cpath d='M2 1 Q9 8 17 17' stroke='%23a89098' stroke-width='0.45' fill='none' opacity='0.6' stroke-linecap='round'/%3E%3Cg stroke='%23200818' stroke-width='0.35' fill='none' opacity='0.85' stroke-linecap='round'%3E%3Cpath d='M3 2 L1 4 M5 3 L2 6 M7 5 L3 9 M9 7 L5 12 M11 9 L7 14 M13 11 L9 16 M15 14 L12 17'/%3E%3Cpath d='M3 2 L6 0 M5 4 L9 1 M7 6 L12 3 M9 8 L14 5 M11 10 L16 8 M13 13 L17 11 M15 15 L18 14'/%3E%3C/g%3E%3Cpath d='M17 17 L20 20 L18 20 L16 18 Z' fill='%238a1538' stroke='%23400612' stroke-width='0.35' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+    background: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M2 2 Q3 4 5 6' stroke='%232a0a18' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M17 17 C11 15 6 12 4 7 C4 5 5 4 7 4 C11 4 16 7 18 11 C19 13 19 16 17 17 Z' fill='%231f1a26' stroke='%236a0820' stroke-width='0.8' stroke-linejoin='round'/%3E%3Cpath d='M5 5 Q11 11 17 17' stroke='%23524458' stroke-width='0.55' fill='none' opacity='0.9' stroke-linecap='round'/%3E%3Cg stroke='%23524458' stroke-width='0.4' fill='none' opacity='0.75' stroke-linecap='round'%3E%3Cpath d='M7 7 Q8 10 9 13'/%3E%3Cpath d='M9 9 Q10 12 11 15'/%3E%3Cpath d='M11 11 Q12 14 13 16'/%3E%3Cpath d='M13 13 Q14 15 15 17'/%3E%3Cpath d='M9 6 Q12 7 13 9'/%3E%3Cpath d='M12 7 Q14 8 16 10'/%3E%3Cpath d='M14 9 Q16 10 17 12'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;
   }
 
   /* fresh blood ink drop hanging from the nib — drips on a slow cycle */
