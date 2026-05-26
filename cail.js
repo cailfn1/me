@@ -1008,6 +1008,56 @@ function initComets() {
   });
 }
 
+// right-click anywhere on empty bg → JACKPOT! (dante's signature move)
+function initJackpot() {
+  document.addEventListener('contextmenu', e => {
+    // let real right-click work on links/inputs/etc so people can copy / open in new tab
+    if (e.target.closest('a, button, input, textarea, select, img, .music, .terminal, .game, .mascot, .gb-form, .work-card, .anime-card, .skill-icon, .webbtn, audio, video')) return;
+    e.preventDefault();
+    spawnJackpot(e.clientX, e.clientY);
+  });
+}
+
+function spawnJackpot(x, y) {
+  // muzzle flash glow behind everything
+  const flash = document.createElement('div');
+  flash.className = 'muzzle-flash';
+  flash.style.left = x + 'px';
+  flash.style.top  = y + 'px';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 650);
+
+  // JACKPOT! text
+  const txt = document.createElement('div');
+  txt.className = 'jackpot-text';
+  txt.textContent = 'JACKPOT!';
+  txt.style.left = x + 'px';
+  txt.style.top  = y + 'px';
+  // tiny random rotation so each one feels slightly different
+  txt.style.setProperty('--tilt', ((Math.random() - 0.5) * 8).toFixed(1) + 'deg');
+  document.body.appendChild(txt);
+  setTimeout(() => txt.remove(), 1600);
+
+  // scattering coins/cash
+  const SYMBOLS = ['$', '$', '💰', '$'];
+  const COUNT = 6;
+  for (let i = 0; i < COUNT; i++) {
+    const c = document.createElement('div');
+    c.className = 'jackpot-coin';
+    c.textContent = SYMBOLS[i % SYMBOLS.length];
+    // angle mostly upward + outward like an explosion
+    const angle = (-Math.PI / 2) + ((i / (COUNT - 1)) - 0.5) * (Math.PI * 1.1) + (Math.random() - 0.5) * 0.3;
+    const dist = 90 + Math.random() * 80;
+    c.style.left = x + 'px';
+    c.style.top  = y + 'px';
+    c.style.setProperty('--dx', (Math.cos(angle) * dist).toFixed(1) + 'px');
+    c.style.setProperty('--dy', (Math.sin(angle) * dist).toFixed(1) + 'px');
+    c.style.animationDelay = (Math.random() * 0.08).toFixed(2) + 's';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 1700);
+  }
+}
+
 let __audioCtx = null;
 let __analyser = null;
 function initAudioViz() {
@@ -1734,6 +1784,7 @@ runBoot().then(() => {
   initParallax();
   initConstellation();
   initComets();
+  initJackpot();
   initAudioViz();
   initSnake();
   initSounds();
