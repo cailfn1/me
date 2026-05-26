@@ -2556,3 +2556,98 @@ body.light-chaos {
   color: var(--muted);
   letter-spacing: 0.3px;
 }
+
+.anime-tag {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--muted);
+  opacity: 0.7;
+  margin: 6px 0 18px;
+  max-width: 560px;
+}
+.anime-tag a {
+  color: #ff9ec5;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(255, 158, 197, 0.4);
+}
+.anime-tag a:hover { color: #ffb4d2; border-bottom-color: rgba(255, 180, 210, 0.7); }
+
+.anime-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.stat-box {
+  flex: 1 1 110px;
+  min-width: 110px;
+  padding: 12px 14px;
+  background: rgba(20, 14, 28, 0.55);
+  border: 1px solid rgba(180, 120, 200, 0.18);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.stat-box:hover {
+  border-color: rgba(255, 126, 182, 0.4);
+  transform: translateY(-2px);
+}
+.stat-box-wide { flex: 2 1 200px; }
+.stat-val {
+  font-family: 'Instrument Serif', serif;
+  font-size: 26px;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: 0.5px;
+}
+.stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.anime-sub {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--muted);
+  opacity: 0.6;
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+}
+
+.anime-cover { position: relative; }
+.anime-score {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(6px);
+  border: 1px solid;
+}
+.anime-score-max { font-weight: 400; opacity: 0.6; font-size: 9px; margin-left: 1px; }
+.anime-score-gold {
+  background: rgba(255, 200, 80, 0.18);
+  color: #ffd47a;
+  border-color: rgba(255, 200, 80, 0.45);
+  box-shadow: 0 0 10px rgba(255, 200, 80, 0.25);
+}
+.anime-score-pink {
+  background: rgba(255, 126, 182, 0.18);
+  color: #ffb4d2;
+  border-color: rgba(255, 126, 182, 0.45);
+}
+.anime-score-dim {
+  background: rgba(120, 120, 140, 0.18);
+  color: #b8b8c8;
+  border-color: rgba(120, 120, 140, 0.4);
+}

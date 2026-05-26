@@ -564,19 +564,30 @@ function closeTerminal() {
 }
 
 const ANILIST_USER = 'cailfn';
-const ANILIST_CACHE_KEY = 'cails-bio:anilist-cache-v2';
+const ANILIST_CACHE_KEY = 'cails-bio:anilist-cache-v3';
 const ANILIST_CACHE_TTL = 15 * 60 * 1000;
 
-async function fetchAniList(user) {
-  const query = `query ($userName: String) {
-    MediaListCollection(userName: $userName, type: ANIME, status: CURRENT) {
+async function fetchAniListData(user) {
+  const query = `query ($name: String) {
+    User(name: $name) {
+      statistics {
+        anime {
+          count
+          episodesWatched
+          minutesWatched
+          meanScore
+          genres(limit: 1, sort: COUNT_DESC) { genre }
+        }
+      }
+    }
+    MediaListCollection(userName: $name, type: ANIME, status: COMPLETED, sort: SCORE_DESC) {
       lists { entries {
-        progress
+        score
         media {
           title { romaji english }
           coverImage { large }
-          episodes
           siteUrl
+          episodes
         }
       } }
     }
@@ -584,38 +595,59 @@ async function fetchAniList(user) {
   const res = await fetch('https://graphql.anilist.co', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ query, variables: { userName: user } }),
+    body: JSON.stringify({ query, variables: { name: user } }),
   });
   if (!res.ok) throw new Error('anilist ' + res.status);
   const json = await res.json();
+  const stats = json?.data?.User?.statistics?.anime || null;
   const lists = json?.data?.MediaListCollection?.lists || [];
-  const entries = lists.flatMap(l => l.entries || []);
-  return entries;
+  const entries = lists.flatMap(l => l.entries || [])
+    .filter(e => e.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 12);
+  return { stats, entries };
+}
+
+function renderAniStats(stats) {
+  const el = $('#animeStats');
+  if (!el || !stats) return;
+  const days = (stats.minutesWatched / 60 / 24).toFixed(1);
+  const mean = stats.meanScore ? (stats.meanScore / 10).toFixed(1) : '—';
+  const topGenre = stats.genres?.[0]?.genre || '—';
+  el.innerHTML = `
+    <div class="stat-box"><div class="stat-val">${stats.count}</div><div class="stat-label">watched</div></div>
+    <div class="stat-box"><div class="stat-val">${stats.episodesWatched.toLocaleString()}</div><div class="stat-label">episodes</div></div>
+    <div class="stat-box"><div class="stat-val">${days}</div><div class="stat-label">days</div></div>
+    <div class="stat-box"><div class="stat-val">${mean}</div><div class="stat-label">avg score</div></div>
+    <div class="stat-box stat-box-wide"><div class="stat-val">${topGenre.toLowerCase()}</div><div class="stat-label">most watched genre</div></div>
+  `;
 }
 
 function renderAniList(entries) {
   const grid = $('#animeGrid');
-  const section = $('#anime');
   if (!grid) return;
   if (!entries || entries.length === 0) {
-    grid.innerHTML = '<div class="anime-loading">nothing right now ¯\\_(ツ)_/¯</div>';
+    grid.innerHTML = '<div class="anime-loading">nothing rated yet</div>';
     return;
   }
   grid.innerHTML = '';
   entries.forEach(e => {
     const title = e.media.title.english || e.media.title.romaji || 'untitled';
     const cover = e.media.coverImage.large;
-    const total = e.media.episodes || '?';
     const url = e.media.siteUrl || '#';
+    const score = e.score;
+    // score class: 9+ gold, 7-8 pink, <7 dim
+    const tier = score >= 9 ? 'gold' : (score >= 7 ? 'pink' : 'dim');
     const a = document.createElement('a');
     a.className = 'anime-card';
     a.href = url;
     a.target = '_blank';
     a.rel = 'noopener';
     a.innerHTML = `
-      <div class="anime-cover" style="background-image: url('${cover}')"></div>
+      <div class="anime-cover" style="background-image: url('${cover}')">
+        <span class="anime-score anime-score-${tier}">${score}<span class="anime-score-max">/10</span></span>
+      </div>
       <div class="anime-title">${title.replace(/[<>]/g, '')}</div>
-      <div class="anime-progress">ep ${e.progress} / ${total}</div>
     `;
     grid.appendChild(a);
   });
@@ -627,16 +659,17 @@ async function initAniList() {
   try {
     const cached = JSON.parse(localStorage.getItem(ANILIST_CACHE_KEY) || 'null');
     if (cached && Date.now() - cached.t < ANILIST_CACHE_TTL) {
+      renderAniStats(cached.stats);
       renderAniList(cached.entries);
       return;
     }
   } catch {}
   try {
-    const entries = await fetchAniList(ANILIST_USER);
-    renderAniList(entries);
-    // only cache non-empty results so a temporary empty response doesn't stick
-    if (entries.length > 0) {
-      localStorage.setItem(ANILIST_CACHE_KEY, JSON.stringify({ t: Date.now(), entries }));
+    const data = await fetchAniListData(ANILIST_USER);
+    renderAniStats(data.stats);
+    renderAniList(data.entries);
+    if (data.stats || data.entries.length > 0) {
+      localStorage.setItem(ANILIST_CACHE_KEY, JSON.stringify({ t: Date.now(), stats: data.stats, entries: data.entries }));
     }
   } catch (err) {
     const section = $('#anime');
