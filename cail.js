@@ -1399,29 +1399,45 @@ function initAmbientParticles() {
   }
 }
 
-// downsample dante to ~32px on an offscreen canvas → upscale with nearest-neighbor in CSS for true pixel-art vibe
+// downsample dante + quantize colors to ~8 levels per channel for a real "8-bit sprite" feel
 function pixelateDante() {
   const img = new Image();
   img.crossOrigin = 'anonymous';
   img.onload = () => {
-    const PX = 32; // chunky pixel resolution
+    const PX = 36;
     const c = document.createElement('canvas');
     c.width = PX;
     c.height = PX;
     const ctx = c.getContext('2d');
     ctx.imageSmoothingEnabled = false;
-    // crop tight to dante's face (upper-center of the original frame)
+    // crop tight to dante's face + a bit of his coat
     const w = img.width;
     const h = img.height;
-    const cropSize = Math.min(w, h * 0.6);
+    const cropSize = Math.min(w, h * 0.78);
     const sx = (w - cropSize) / 2;
-    const sy = h * 0.08;
+    const sy = h * 0.04;
     ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, PX, PX);
+
+    // color quantization — bucket each rgb channel into 6 levels so it looks like sprite art
+    const LEVELS = 6;
+    const STEP = Math.floor(255 / (LEVELS - 1));
+    const data = ctx.getImageData(0, 0, PX, PX);
+    for (let i = 0; i < data.data.length; i += 4) {
+      data.data[i]     = Math.round(data.data[i]     / STEP) * STEP;
+      data.data[i + 1] = Math.round(data.data[i + 1] / STEP) * STEP;
+      data.data[i + 2] = Math.round(data.data[i + 2] / STEP) * STEP;
+      // push dark city background toward transparent
+      const lum = data.data[i] * 0.3 + data.data[i + 1] * 0.59 + data.data[i + 2] * 0.11;
+      if (lum < 70) data.data[i + 3] = 0;
+      else if (lum < 100) data.data[i + 3] = 140;
+    }
+    ctx.putImageData(data, 0, 0);
+
     try {
       const url = c.toDataURL('image/png');
       document.documentElement.style.setProperty('--dante-pixel', `url("${url}")`);
     } catch (e) {
-      // canvas tainted by cors — fallback (shouldn't happen, same-origin)
+      // shouldn't happen, same-origin
     }
   };
   img.src = 'assets/dante.jpg';
