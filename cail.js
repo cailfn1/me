@@ -894,11 +894,11 @@ function initStarfield() {
     const roll = Math.random();
     let size, color, glow;
     if (roll < 0.04) {
-      // rare big glowy star, sometimes pink tinted
+      // rare big glowy star, occasionally faint red-tinted to match the blood moon
       size = 3.2;
-      const pinky = Math.random() < 0.4;
-      color = pinky ? '#ffd6e8' : '#ffffff';
-      glow  = pinky ? '0 0 10px rgba(255,180,210,0.85)' : '0 0 8px rgba(255,255,255,0.85)';
+      const reddish = Math.random() < 0.25;
+      color = reddish ? '#ffd0d6' : '#ffffff';
+      glow  = reddish ? '0 0 10px rgba(255, 110, 130, 0.7)' : '0 0 8px rgba(255,255,255,0.85)';
     } else if (roll < 0.2) {
       size = 2;
       color = '#ffffff';
@@ -1099,6 +1099,34 @@ function initShootingStars() {
     setTimeout(loop, next);
   }
   setTimeout(loop, 3500);
+}
+
+function initFeathers() {
+  const host = $('#feathers');
+  if (!host) return;
+  function spawn() {
+    const f = document.createElement('div');
+    f.className = 'feather';
+    const startX = Math.random() * 90 + 5; // 5vw - 95vw
+    const sway   = (Math.random() - 0.5) * 220;
+    const drift  = (Math.random() - 0.5) * 260;
+    const dur    = 24 + Math.random() * 14;
+    const size   = 18 + Math.random() * 14;
+    f.style.left = startX + 'vw';
+    f.style.width  = size + 'px';
+    f.style.height = size + 'px';
+    f.style.setProperty('--sx', sway + 'px');
+    f.style.setProperty('--ex', drift + 'px');
+    f.style.setProperty('--dur', dur + 's');
+    host.appendChild(f);
+    setTimeout(() => f.remove(), dur * 1000 + 200);
+  }
+  function loop() {
+    spawn();
+    const next = 28000 + Math.random() * 32000; // 28-60s between feathers
+    setTimeout(loop, next);
+  }
+  setTimeout(loop, 5000);
 }
 
 function initParallax() {
@@ -1702,6 +1730,7 @@ runBoot().then(() => {
   initWebBtns();
   initStarfield();
   initShootingStars();
+  initFeathers();
   initParallax();
   initConstellation();
   initComets();

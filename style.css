@@ -126,9 +126,9 @@ body::before {
   inset: 0;
   z-index: -5;
   background:
-    radial-gradient(1200px 800px at 70% 20%, rgba(40, 18, 70, 0.55) 0%, transparent 60%),
-    radial-gradient(1000px 700px at 20% 80%, rgba(60, 15, 55, 0.45) 0%, transparent 60%),
-    linear-gradient(135deg, #020108 0%, #04020a 50%, #010104 100%);
+    radial-gradient(1200px 800px at 70% 20%, rgba(90, 12, 30, 0.5) 0%, transparent 60%),
+    radial-gradient(1000px 700px at 20% 80%, rgba(60, 8, 20, 0.5) 0%, transparent 60%),
+    linear-gradient(135deg, #040104 0%, #080208 50%, #020001 100%);
 }
 
 .blobs {
@@ -150,40 +150,40 @@ body::before {
 .blob-1 {
   width: 820px;
   height: 820px;
-  background: radial-gradient(circle, rgba(86, 32, 140, 0.7) 0%, rgba(86, 32, 140, 0.18) 40%, transparent 70%);
+  background: radial-gradient(circle, rgba(140, 18, 38, 0.6) 0%, rgba(80, 8, 22, 0.18) 40%, transparent 70%);
   top: -18%;
   left: -14%;
-  opacity: 0.7;
+  opacity: 0.6;
   animation: blobDrift1 70s ease-in-out infinite;
 }
 
 .blob-2 {
   width: 720px;
   height: 720px;
-  background: radial-gradient(circle, rgba(140, 40, 110, 0.55) 0%, rgba(140, 40, 110, 0.15) 40%, transparent 70%);
+  background: radial-gradient(circle, rgba(160, 26, 64, 0.45) 0%, rgba(100, 14, 36, 0.12) 40%, transparent 70%);
   top: 20%;
   right: -14%;
-  opacity: 0.6;
+  opacity: 0.55;
   animation: blobDrift2 88s ease-in-out infinite;
 }
 
 .blob-3 {
   width: 700px;
   height: 700px;
-  background: radial-gradient(circle, rgba(40, 30, 110, 0.6) 0%, rgba(40, 30, 110, 0.15) 40%, transparent 70%);
+  background: radial-gradient(circle, rgba(60, 6, 16, 0.65) 0%, rgba(30, 2, 8, 0.15) 40%, transparent 70%);
   bottom: -18%;
   left: 18%;
-  opacity: 0.65;
+  opacity: 0.7;
   animation: blobDrift3 80s ease-in-out infinite;
 }
 
 .blob-4 {
   width: 580px;
   height: 580px;
-  background: radial-gradient(circle, rgba(190, 70, 140, 0.35) 0%, rgba(190, 70, 140, 0.1) 40%, transparent 70%);
+  background: radial-gradient(circle, rgba(180, 30, 70, 0.3) 0%, rgba(120, 14, 40, 0.08) 40%, transparent 70%);
   top: 50%;
   left: -4%;
-  opacity: 0.45;
+  opacity: 0.4;
   animation: blobDrift4 96s ease-in-out infinite;
 }
 
@@ -222,19 +222,19 @@ body::before {
 }
 .fog-1 {
   width: 70vw; height: 50vh;
-  background: radial-gradient(ellipse, rgba(120, 60, 180, 0.22) 0%, transparent 65%);
+  background: radial-gradient(ellipse, rgba(140, 20, 40, 0.18) 0%, transparent 65%);
   top: 8%; left: -10%;
   animation: fogDrift1 140s ease-in-out infinite;
 }
 .fog-2 {
   width: 80vw; height: 60vh;
-  background: radial-gradient(ellipse, rgba(60, 30, 110, 0.28) 0%, transparent 65%);
+  background: radial-gradient(ellipse, rgba(60, 8, 18, 0.32) 0%, transparent 65%);
   bottom: -10%; right: -15%;
   animation: fogDrift2 180s ease-in-out infinite;
 }
 .fog-3 {
   width: 60vw; height: 45vh;
-  background: radial-gradient(ellipse, rgba(180, 70, 130, 0.14) 0%, transparent 65%);
+  background: radial-gradient(ellipse, rgba(180, 40, 70, 0.12) 0%, transparent 65%);
   top: 40%; left: 30%;
   animation: fogDrift3 160s ease-in-out infinite;
 }
@@ -249,6 +249,69 @@ body::before {
 @keyframes fogDrift3 {
   0%, 100% { transform: translate(0, 0) scale(0.95); }
   50%      { transform: translate(-15vw, 12vh) scale(1.2); }
+}
+
+/* ===== blood moon ===== */
+.blood-moon {
+  position: fixed;
+  top: -22vh;
+  right: -16vw;
+  width: 90vh;
+  height: 90vh;
+  z-index: -3;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 40% 38%, rgba(255, 90, 110, 0.16) 0%, rgba(180, 30, 60, 0.22) 22%, rgba(120, 14, 36, 0.18) 38%, transparent 58%);
+  filter: blur(8px);
+  animation: moonPulse 14s ease-in-out infinite;
+  opacity: 0.85;
+}
+@keyframes moonPulse {
+  0%, 100% { transform: scale(1);    opacity: 0.85; }
+  50%      { transform: scale(1.04); opacity: 1; }
+}
+
+/* ===== notebook paper texture (very faint) ===== */
+.notebook-paper {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent 27px,
+    rgba(255, 80, 110, 0.9) 27px,
+    rgba(255, 80, 110, 0.9) 28px
+  );
+  mix-blend-mode: screen;
+}
+
+/* ===== drifting feathers (subtle ryuk ref) ===== */
+.feathers {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.feather {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  opacity: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 C8 6 5 11 5 16 C5 19 7 21 9 21 L11 21 L11 13 L12 12 L12 21 L14 21 C17 21 19 18 19 14 C19 8 16 4 12 2 Z' fill='%23090208' stroke='%231a0006' stroke-width='0.5'/%3E%3C/svg%3E") center/contain no-repeat;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6));
+  animation: featherFall var(--dur, 22s) linear forwards;
+  transform-origin: center;
+}
+@keyframes featherFall {
+  0%   { opacity: 0; transform: translate(0, -10vh) rotate(0deg); }
+  10%  { opacity: 0.75; }
+  50%  { transform: translate(var(--sx, 60px), 50vh) rotate(180deg); }
+  90%  { opacity: 0.75; }
+  100% { opacity: 0; transform: translate(var(--ex, -40px), 110vh) rotate(360deg); }
 }
 
 .constellation {
