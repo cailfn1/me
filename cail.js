@@ -884,6 +884,165 @@ function initStarfield() {
     s.style.animationDuration = (3.5 + Math.random() * 5).toFixed(1) + 's';
     stars.appendChild(s);
   }
+  // cache positions for the constellation feature
+  cacheStarPositions();
+}
+
+let __starCache = [];
+let __starParallax = 0;
+function cacheStarPositions() {
+  __starCache = [];
+  document.querySelectorAll('.star').forEach(el => {
+    const r = el.getBoundingClientRect();
+    __starCache.push({
+      x: r.left + r.width / 2,
+      y: r.top + r.height / 2 - __starParallax,
+    });
+  });
+}
+window.addEventListener('resize', () => setTimeout(cacheStarPositions, 100));
+
+function initConstellation() {
+  const lines = [$('#conLine1'), $('#conLine2'), $('#conLine3')];
+  if (!lines[0]) return;
+  let lastMove = 0;
+  let fadeTimer = null;
+
+  function update(cx, cy) {
+    if (!__starCache.length) return;
+    // find 3 nearest stars within 230px
+    const cands = [];
+    const MAX_DIST = 230;
+    for (let i = 0; i < __starCache.length; i++) {
+      const s = __starCache[i];
+      const dx = s.x - cx;
+      const dy = (s.y + __starParallax) - cy;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < MAX_DIST * MAX_DIST) cands.push({ d2, x: s.x, y: s.y + __starParallax });
+    }
+    cands.sort((a, b) => a.d2 - b.d2);
+    for (let i = 0; i < 3; i++) {
+      const ln = lines[i];
+      if (cands[i]) {
+        ln.setAttribute('x1', cx);
+        ln.setAttribute('y1', cy);
+        ln.setAttribute('x2', cands[i].x);
+        ln.setAttribute('y2', cands[i].y);
+        const closeness = 1 - Math.sqrt(cands[i].d2) / MAX_DIST;
+        ln.setAttribute('opacity', (closeness * 0.75).toFixed(2));
+      } else {
+        ln.setAttribute('opacity', 0);
+      }
+    }
+  }
+
+  let ticking = false;
+  let lastX = 0, lastY = 0;
+  window.addEventListener('mousemove', e => {
+    lastX = e.clientX;
+    lastY = e.clientY;
+    lastMove = performance.now();
+    if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      update(lastX, lastY);
+      ticking = false;
+    });
+    // fade out after stillness
+    fadeTimer = setTimeout(() => lines.forEach(l => l.setAttribute('opacity', 0)), 400);
+  }, { passive: true });
+}
+
+function initComets() {
+  const host = $('#comets');
+  if (!host) return;
+  window.addEventListener('click', e => {
+    // only on bg clicks — not on buttons, links, inputs, the music widget, etc.
+    if (e.target.closest('a, button, input, textarea, .music, .terminal, .game, .mascot, .gb-form, .work-card, .anime-card, .skill-icon, .webbtn')) return;
+    const c = document.createElement('div');
+    c.className = 'comet';
+    c.style.left = e.clientX + 'px';
+    c.style.top  = e.clientY + 'px';
+    // angle: mostly diagonal, biased slightly down-right or down-left
+    const baseAngle = Math.random() < 0.5 ? 25 : 155;
+    const angle = baseAngle + (Math.random() * 20 - 10);
+    const dist  = 600 + Math.random() * 300;
+    c.style.setProperty('--angle', angle + 'deg');
+    c.style.setProperty('--dist',  dist + 'px');
+    host.appendChild(c);
+    setTimeout(() => c.remove(), 1500);
+  });
+}
+
+let __audioCtx = null;
+let __analyser = null;
+function initAudioViz() {
+  const audio = $('#musicAudio');
+  const eq = $('#musicEq');
+  if (!audio || !eq) return;
+  const bars = [...eq.querySelectorAll('span')];
+
+  function ensureCtx() {
+    if (__audioCtx) return true;
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return false;
+      __audioCtx = new Ctx();
+      const src = __audioCtx.createMediaElementSource(audio);
+      __analyser = __audioCtx.createAnalyser();
+      __analyser.fftSize = 64;
+      __analyser.smoothingTimeConstant = 0.78;
+      src.connect(__analyser);
+      __analyser.connect(__audioCtx.destination);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  let running = false;
+  const data = new Uint8Array(32);
+  function loop() {
+    if (!running || !__analyser) return;
+    __analyser.getByteFrequencyData(data);
+    // map 32 bins to 4 buckets (bass, low-mid, high-mid, treble)
+    const buckets = [
+      avg(data, 0, 4),     // bass
+      avg(data, 4, 10),    // low-mid
+      avg(data, 10, 18),   // high-mid
+      avg(data, 18, 28),   // treble
+    ];
+    for (let i = 0; i < 4; i++) {
+      const h = Math.max(20, Math.min(100, (buckets[i] / 255) * 130));
+      bars[i].style.height = h + '%';
+    }
+    requestAnimationFrame(loop);
+  }
+  function avg(arr, a, b) {
+    let s = 0;
+    for (let i = a; i < b; i++) s += arr[i];
+    return s / (b - a);
+  }
+
+  audio.addEventListener('play', () => {
+    if (!ensureCtx()) {
+      eq.classList.add('fake');
+      return;
+    }
+    if (__audioCtx.state === 'suspended') __audioCtx.resume();
+    eq.classList.remove('fake');
+    running = true;
+    loop();
+  });
+  audio.addEventListener('pause', () => {
+    running = false;
+    bars.forEach(b => b.style.height = '25%');
+  });
+  audio.addEventListener('ended', () => {
+    running = false;
+    bars.forEach(b => b.style.height = '25%');
+  });
 }
 
 function initShootingStars() {
@@ -920,7 +1079,8 @@ function initParallax() {
     ticking = true;
     requestAnimationFrame(() => {
       const y = window.scrollY;
-      if (stars) stars.style.transform = `translate3d(0, ${y * -0.18}px, 0)`;
+      __starParallax = y * -0.18;
+      if (stars) stars.style.transform = `translate3d(0, ${__starParallax}px, 0)`;
       if (fog)   fog.style.transform   = `translate3d(0, ${y * -0.32}px, 0)`;
       if (blobs) blobs.style.transform = `translate3d(0, ${y * -0.45}px, 0)`;
       ticking = false;
@@ -1504,6 +1664,9 @@ runBoot().then(() => {
   initStarfield();
   initShootingStars();
   initParallax();
+  initConstellation();
+  initComets();
+  initAudioViz();
   initSnake();
   initSounds();
   initCursor();
