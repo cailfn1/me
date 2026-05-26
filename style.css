@@ -953,6 +953,17 @@ body::before {
   font-size: 12px;
 }
 
+.hero-skills-tag {
+  display: block;
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--muted);
+  opacity: 0.65;
+  margin: 14px 0 6px;
+  letter-spacing: 0.3px;
+}
+
 .skill-icon {
   --c: var(--accent);
   --fg: #ffffff;
