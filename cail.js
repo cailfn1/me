@@ -1151,6 +1151,41 @@ function initShootingStars() {
   setTimeout(loop, 3500);
 }
 
+function initPetals() {
+  const host = $('#petals');
+  if (!host) return;
+  function spawn() {
+    const p = document.createElement('div');
+    p.className = 'petal';
+    // spawn from tree area (top-right region of viewport)
+    const startX = 58 + Math.random() * 40; // 58vw - 98vw
+    const startY = Math.random() * 18;       // top 18vh
+    const drift  = -(120 + Math.random() * 280); // leftward drift as they fall
+    const dur    = 13 + Math.random() * 9;       // 13-22s slow fall
+    const size   = 11 + Math.random() * 8;       // 11-19px
+    const tilt   = (Math.random() * 360);
+    p.style.left = startX + 'vw';
+    p.style.top  = startY + 'vh';
+    p.style.width  = size + 'px';
+    p.style.height = (size * 1.25).toFixed(1) + 'px';
+    p.style.setProperty('--drift', drift + 'px');
+    p.style.setProperty('--dur', dur + 's');
+    p.style.setProperty('--start-rot', tilt + 'deg');
+    host.appendChild(p);
+    setTimeout(() => p.remove(), dur * 1000 + 600);
+  }
+  // seed a few in the air immediately so it doesn't look empty on load
+  for (let i = 0; i < 4; i++) {
+    setTimeout(spawn, i * 900 + 300);
+  }
+  function loop() {
+    spawn();
+    const next = 2200 + Math.random() * 3000; // every 2.2-5.2s, multiple in air
+    setTimeout(loop, next);
+  }
+  setTimeout(loop, 4200);
+}
+
 function initFeathers() {
   const host = $('#feathers');
   if (!host) return;
@@ -1825,6 +1860,7 @@ runBoot().then(() => {
   initStarfield();
   initShootingStars();
   initFeathers();
+  initPetals();
   initParallax();
   initConstellation();
   initComets();
