@@ -263,37 +263,6 @@ function typeBio() {
   setTimeout(step, 400);
 }
 
-function initKonami() {
-  const code = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
-  const buffer = [];
-  window.addEventListener('keydown', (e) => {
-    // ignore when typing into inputs/textarea
-    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-    buffer.push(e.key);
-    if (buffer.length > code.length) buffer.shift();
-    if (buffer.length === code.length && buffer.every((k, i) => k.toLowerCase() === code[i].toLowerCase())) {
-      triggerConfetti();
-      console.log('%c> hello fellow gamer', 'color:#7289da;font-family:monospace;font-size:14px');
-      buffer.length = 0;
-    }
-  });
-}
-
-function triggerConfetti() {
-  const colors = ['#7289da', '#43b581', '#e84a4a', '#f1c40f', '#0088cc', '#e8e8e8'];
-  for (let i = 0; i < 40; i++) {
-    const piece = document.createElement('div');
-    piece.className = 'confetti-piece';
-    piece.style.left = Math.random() * 100 + 'vw';
-    piece.style.background = colors[i % colors.length];
-    piece.style.animationDuration = (1.8 + Math.random() * 1.6) + 's';
-    piece.style.animationDelay = (Math.random() * 0.4) + 's';
-    piece.style.transform = `rotate(${Math.random() * 360}deg)`;
-    document.body.appendChild(piece);
-    setTimeout(() => piece.remove(), 4000);
-  }
-}
-
 function initAvatarStreak() {
   const avatar = $('#avatar');
   const tagline = $('#tagline');
@@ -466,6 +435,7 @@ function initLanyard() {
     });
     ws.addEventListener('close', () => clearInterval(heartbeat));
     ws.addEventListener('error', () => {
+      clearInterval(heartbeat);
       fetch(`https://api.lanyard.rest/v1/users/${id}`)
         .then(r => r.json())
         .then(j => { if (j.success) applyPresence(j.data); })
@@ -685,7 +655,7 @@ function initTerminal() {
   const isTypingTarget = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA');
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === '/' && !isTypingTarget(e.target)) {
+    if (e.key === '/' && !isTypingTarget(e.target) && $('#cmdk')?.hidden !== false) {
       e.preventDefault();
       openTerminal();
     }
@@ -2151,7 +2121,6 @@ runBoot().then(() => {
   initPetals();
   initCrow();
   initThunder();
-  initKonami();
   initCmdK();
   initParallax();
   initConstellation();
