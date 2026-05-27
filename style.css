@@ -2980,33 +2980,66 @@ body.light-chaos {
 
 .activity-meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .activity-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.now-spinning-label { display: none; font-family: 'Instrument Serif', serif; font-style: italic; font-size: 11px; color: rgba(255, 182, 217, 0.85); letter-spacing: 0.5px; line-height: 1; }
+.now-spinning-label {
+  display: none;
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: rgba(255, 138, 171, 0.85);
+  letter-spacing: 0.5px;
+  line-height: 1;
+  text-shadow: 0 0 6px rgba(180, 30, 70, 0.5);
+}
 .activity-eq { display: none; align-items: flex-end; gap: 2px; height: 11px; flex-shrink: 0; }
-.activity-eq span { width: 2px; background: linear-gradient(180deg, #ffb4d2, #ff7eb6); border-radius: 999px; height: 30%; animation: eqBar 0.9s ease-in-out infinite; box-shadow: 0 0 3px rgba(255, 126, 182, 0.5); }
+.activity-eq span {
+  width: 2px;
+  background: linear-gradient(180deg, #ff8aab, #8a1538);
+  border-radius: 999px;
+  height: 30%;
+  animation: eqBar 0.9s ease-in-out infinite;
+  box-shadow: 0 0 4px rgba(180, 30, 70, 0.65);
+}
 .activity-eq span:nth-child(1) { animation-delay: 0s; }
 .activity-eq span:nth-child(2) { animation-delay: 0.2s; }
 .activity-eq span:nth-child(3) { animation-delay: 0.4s; }
 
 .activity-row.spotify {
-  padding: 6px 12px 6px 6px;
-  background: linear-gradient(135deg, rgba(255, 126, 182, 0.08), rgba(255, 126, 182, 0.02));
-  border: 1px solid rgba(255, 126, 182, 0.18);
+  padding: 6px 14px 6px 6px;
+  background:
+    linear-gradient(135deg, rgba(40, 12, 24, 0.7) 0%, rgba(18, 8, 22, 0.55) 100%);
+  border: 1px solid rgba(180, 30, 70, 0.35);
   border-radius: 999px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.55),
+    0 0 14px rgba(120, 10, 40, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
   margin-top: 6px;
   align-self: flex-start;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.activity-row.spotify:hover {
+  border-color: rgba(255, 138, 171, 0.55);
+  box-shadow:
+    0 6px 22px rgba(0, 0, 0, 0.6),
+    0 0 24px rgba(180, 30, 70, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 .activity-row.spotify .activity-art {
-  width: 44px; height: 44px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   animation: vinylSpin 8s linear infinite;
-  border: 1px solid rgba(255, 126, 182, 0.25);
-  box-shadow: 0 0 12px rgba(255, 126, 182, 0.3), inset 0 0 0 4px rgba(0, 0, 0, 0.6), inset 0 0 0 6px rgba(255, 126, 182, 0.4);
+  border: 1px solid rgba(180, 30, 70, 0.5);
+  box-shadow:
+    0 0 14px rgba(180, 30, 70, 0.35),
+    inset 0 0 0 4px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 6px rgba(120, 10, 40, 0.55);
 }
 .activity-row.spotify .now-spinning-label { display: block; }
 .activity-row.spotify .activity-eq { display: inline-flex; }
-.activity-row.spotify .activity { color: rgba(255, 240, 248, 0.95); font-size: 13px; }
+.activity-row.spotify .activity { color: rgba(252, 240, 244, 0.95); font-size: 13px; }
 
 @keyframes vinylSpin {
   to { transform: rotate(360deg); }
