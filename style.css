@@ -38,76 +38,17 @@ body {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  body, a, button, input, textarea, select,
-  .pill, .project, .avatar, .music-btn, .gb-submit, .terminal-close,
-  .arcade-play, .game-start, .link-btn {
-    cursor: none;
+  /* native cursor = perfect tracking. small dark cherry petal pointing up, tip = mouse hot spot at (14, 2). */
+  body {
+    cursor: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cpath d='M 14 2 C 19 7 23 13 20 21 C 18 25 14 26 14 26 C 14 26 10 25 8 21 C 5 13 9 7 14 2 Z' fill='%2315101a' stroke='%237a0a22' stroke-width='1' stroke-linejoin='round'/%3E%3Cpath d='M 14 5 L 14 23' stroke='%235a4a5a' stroke-width='0.6' opacity='0.55'/%3E%3C/svg%3E") 14 2, default;
   }
 
-  .cursor-dot {
-    position: fixed;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-    z-index: 10000;
-    transform: translate3d(-50%, -50%, 0);
-    will-change: transform, opacity;
-    width: 62px;
-    height: 62px;
-    filter:
-      drop-shadow(0 0 7px rgba(200, 40, 80, 0.75))
-      drop-shadow(0 0 18px rgba(120, 16, 50, 0.55))
-      drop-shadow(0 3px 5px rgba(0, 0, 0, 0.85));
-    transition: opacity 0.2s ease;
-    /* very slow sway like the leaf is drifting through the air */
-    animation: leafSway 6s ease-in-out infinite;
+  /* konami code activates ryuk cursor for 10s — small ryuk silhouette holding apple, hot spot at center-ish */
+  body.ryuk-mode {
+    cursor: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M 8 14 Q 4 12 5 18 Q 8 17 10 16 Z' fill='%230a0408' stroke='%231a0410' stroke-width='0.4'/%3E%3Cpath d='M 24 14 Q 28 12 27 18 Q 24 17 22 16 Z' fill='%230a0408' stroke='%231a0410' stroke-width='0.4'/%3E%3Crect x='13' y='12' width='6' height='14' fill='%230a0408' stroke='%231a0410' stroke-width='0.4' rx='1.5'/%3E%3Ccircle cx='16' cy='9' r='3.5' fill='%230a0408' stroke='%231a0410' stroke-width='0.4'/%3E%3Cpath d='M 13 7 L 12 4 L 14 6 L 16 3 L 18 6 L 20 4 L 19 7 Z' fill='%230a0408' stroke='%231a0410' stroke-width='0.3' stroke-linejoin='round'/%3E%3Ccircle cx='14.5' cy='9' r='0.7' fill='%23ffd400'/%3E%3Ccircle cx='17.5' cy='9' r='0.7' fill='%23ffd400'/%3E%3Cline x1='14' y1='26' x2='13' y2='30' stroke='%230a0408' stroke-width='1.8' stroke-linecap='round'/%3E%3Cline x1='18' y1='26' x2='19' y2='30' stroke='%230a0408' stroke-width='1.8' stroke-linecap='round'/%3E%3Cline x1='19' y1='17' x2='23' y2='20' stroke='%230a0408' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='21' r='2.8' fill='%23b81836' stroke='%23400612' stroke-width='0.4'/%3E%3Cpath d='M 24 18.5 L 25 17 L 23.8 17.5' stroke='%231a4a18' stroke-width='0.7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") 16 3, default;
   }
 
-  @keyframes leafSway {
-    0%, 100% { rotate: -3deg; }
-    50%      { rotate: 3deg; }
-  }
-
-  /* ryuk mode: konami code activates this for 10s — cursor becomes tiny ryuk holding an apple */
-  body.ryuk-mode .cursor-dot::before {
-    background: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M 8 14 Q 4 12 5 18 Q 8 17 10 16 Z' fill='%230a0408' stroke='%231a0410' stroke-width='0.4'/%3E%3Cpath d='M 24 14 Q 28 12 27 18 Q 24 17 22 16 Z' fill='%230a0408' stroke='%231a0410' stroke-width='0.4'/%3E%3Crect x='13' y='12' width='6' height='14' fill='%230a0408' stroke='%231a0410' stroke-width='0.4' rx='1.5'/%3E%3Ccircle cx='16' cy='9' r='3.5' fill='%230a0408' stroke='%231a0410' stroke-width='0.4'/%3E%3Cpath d='M 13 7 L 12 4 L 14 6 L 16 3 L 18 6 L 20 4 L 19 7 Z' fill='%230a0408' stroke='%231a0410' stroke-width='0.3' stroke-linejoin='round'/%3E%3Ccircle cx='14.5' cy='9' r='0.7' fill='%23ffd400'/%3E%3Ccircle cx='17.5' cy='9' r='0.7' fill='%23ffd400'/%3E%3Cline x1='14' y1='26' x2='13' y2='30' stroke='%230a0408' stroke-width='1.8' stroke-linecap='round'/%3E%3Cline x1='18' y1='26' x2='19' y2='30' stroke='%230a0408' stroke-width='1.8' stroke-linecap='round'/%3E%3Cline x1='19' y1='17' x2='23' y2='20' stroke='%230a0408' stroke-width='1.6' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='21' r='2.8' fill='%23b81836' stroke='%23400612' stroke-width='0.4'/%3E%3Cpath d='M 24 18.5 L 25 17 L 23.8 17.5' stroke='%231a4a18' stroke-width='0.7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat !important;
-  }
-  body.ryuk-mode .cursor-dot::after { display: none; }
-  body.ryuk-mode .cursor-dot { animation: none; rotate: 0deg !important; }
-
-  /* falling leaf: dark autumn shape w/ broken stem + visible veins + crimson outline so it pops on dark bg */
-  .cursor-dot::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M2 2 Q3 4 5 6' stroke='%232a0a18' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M17 17 C11 15 6 12 4 7 C4 5 5 4 7 4 C11 4 16 7 18 11 C19 13 19 16 17 17 Z' fill='%231f1a26' stroke='%236a0820' stroke-width='0.8' stroke-linejoin='round'/%3E%3Cpath d='M5 5 Q11 11 17 17' stroke='%23524458' stroke-width='0.55' fill='none' opacity='0.9' stroke-linecap='round'/%3E%3Cg stroke='%23524458' stroke-width='0.4' fill='none' opacity='0.75' stroke-linecap='round'%3E%3Cpath d='M7 7 Q8 10 9 13'/%3E%3Cpath d='M9 9 Q10 12 11 15'/%3E%3Cpath d='M11 11 Q12 14 13 16'/%3E%3Cpath d='M13 13 Q14 15 15 17'/%3E%3Cpath d='M9 6 Q12 7 13 9'/%3E%3Cpath d='M12 7 Q14 8 16 10'/%3E%3Cpath d='M14 9 Q16 10 17 12'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;
-  }
-
-  /* fresh blood ink drop hanging from the nib — drips on a slow cycle */
-  .cursor-dot::after {
-    content: '';
-    position: absolute;
-    left: 56%;
-    top: 62%;
-    width: 5px;
-    height: 7px;
-    background: radial-gradient(ellipse at 50% 35%, #ff5878 0%, #a01a40 55%, #6a0820 100%);
-    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-    box-shadow: 0 0 5px rgba(180, 30, 70, 0.85);
-    transform-origin: center top;
-    animation: nibDrip 3.4s ease-in infinite;
-  }
-  @keyframes nibDrip {
-    0%, 60%  { transform: translate(0, 0) scale(1); opacity: 1; }
-    72%      { transform: translate(0, 3px) scale(1.15, 1.3); opacity: 1; }
-    100%     { transform: translate(0, 26px) scale(0.5, 1.3); opacity: 0; }
-  }
-
-  .cursor-dot.hidden {
-    opacity: 0;
-  }
-
-  /* cursor sheds tiny petals as it moves (matching the leaf cursor) */
+  /* cursor sheds tiny petals as it moves (subtle ambient trail) */
   .cursor-trail {
     position: fixed;
     width: 9px;

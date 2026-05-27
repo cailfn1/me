@@ -1740,37 +1740,20 @@ function initCursor() {
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   if (!fine || reducedMotion) return;
 
-  const dot = document.createElement('div');
-  dot.className = 'cursor-dot hidden';
-  document.body.appendChild(dot);
-
-  let mx = window.innerWidth / 2;
-  let my = window.innerHeight / 2;
-  let dx = mx;
-  let dy = my;
+  // native CSS cursor handles tracking — JS only spawns ambient trail + click bursts at raw mouse coords
   let lastTrail = 0;
-  const TRAIL_INTERVAL = 32;
-
-  function frame() {
-    dx += (mx - dx) * 0.32;
-    dy += (my - dy) * 0.32;
-    dot.style.transform = `translate3d(${dx}px, ${dy}px, 0) translate(-50%, -50%)` + (dot.classList.contains('click') ? ' scale(1.3)' : '');
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
+  const TRAIL_INTERVAL = 55; // less frequent than before for a cleaner look
 
   function spawnTrail(x, y) {
     const t = document.createElement('div');
     t.className = 'cursor-trail';
-    // small random horizontal sway so drips don't fall in a perfect line
-    const sway = (Math.random() - 0.5) * 8;
+    const sway = (Math.random() - 0.5) * 6;
     t.style.left = (x + sway) + 'px';
-    t.style.top  = y + 'px';
-    // random tiny size variation for organic feel
-    const scale = 0.8 + Math.random() * 0.5;
+    t.style.top  = (y + 6) + 'px'; // spawn just below the cursor tip
+    const scale = 0.75 + Math.random() * 0.4;
     t.style.setProperty('--scale', scale);
     document.body.appendChild(t);
-    setTimeout(() => t.remove(), 1300);
+    setTimeout(() => t.remove(), 1200);
   }
 
   function spawnHeartBurst(x, y) {
@@ -1793,28 +1776,20 @@ function initCursor() {
   }
 
   window.addEventListener('mousemove', (e) => {
-    mx = e.clientX;
-    my = e.clientY;
-    dot.classList.remove('hidden');
-
     const now = performance.now();
     if (now - lastTrail > TRAIL_INTERVAL) {
-      spawnTrail(mx, my);
+      spawnTrail(e.clientX, e.clientY);
       lastTrail = now;
     }
-  });
-
-  document.addEventListener('mouseleave', () => dot.classList.add('hidden'));
-  document.addEventListener('mouseenter', () => dot.classList.remove('hidden'));
+  }, { passive: true });
 
   window.addEventListener('mousedown', (e) => {
-    dot.classList.add('click');
+    if (e.button !== 0) return; // only left clicks
     const tag = e.target.tagName;
     if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
       spawnHeartBurst(e.clientX, e.clientY);
     }
-  });
-  window.addEventListener('mouseup', () => dot.classList.remove('click'));
+  }, { passive: true });
 }
 
 const LS_LEADERBOARD = 'cails-bio:snake-leaderboard';
