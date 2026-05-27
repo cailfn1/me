@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=68" />
+  <link rel="stylesheet" href="style.css?v=69" />
 </head>
 <body data-discord-id="1480622111339843876">
   <div class="blobs" aria-hidden="true">
@@ -297,6 +297,32 @@
   </svg>
   <div class="ground-fog" aria-hidden="true"></div>
   <div class="thunder-flash" id="thunderFlash" aria-hidden="true"></div>
+  <svg class="lightning" id="lightning" viewBox="0 0 400 380" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
+    <!-- soft glow halo behind the bolt -->
+    <path class="lightning-glow"
+          d="M 320 -10 L 295 80 L 335 92 L 290 165 L 325 178 L 270 270 L 305 282 L 245 380"
+          fill="none"
+          stroke="rgba(216, 222, 232, 0.35)"
+          stroke-width="9"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    <!-- main crisp bolt -->
+    <path class="lightning-bolt"
+          d="M 320 -10 L 295 80 L 335 92 L 290 165 L 325 178 L 270 270 L 305 282 L 245 380"
+          fill="none"
+          stroke="#d8dce4"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="miter"/>
+    <!-- small branch off the main bolt -->
+    <path class="lightning-bolt"
+          d="M 290 165 L 245 195 L 270 215 L 220 260"
+          fill="none"
+          stroke="#d8dce4"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="miter"/>
+  </svg>
   <div class="notebook-paper" aria-hidden="true"></div>
   <div class="cmdk" id="cmdk" hidden>
     <div class="cmdk-backdrop" id="cmdkBackdrop"></div>
@@ -637,6 +663,6 @@
     </div>
   </div>
 
-  <script src="cail.js?v=65"></script>
+  <script src="cail.js?v=69"></script>
 </body>
 </html>

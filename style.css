@@ -408,6 +408,33 @@ body.night-mode .star {
   100% { opacity: 0; }
 }
 
+/* lightning bolt — crispy off-white, fires when thunder triggers, two-strike pattern */
+.lightning {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 36vw;
+  max-width: 440px;
+  height: 56vh;
+  max-height: 520px;
+  z-index: 51;
+  pointer-events: none;
+  opacity: 0;
+  filter: drop-shadow(0 0 6px rgba(216, 222, 232, 0.35)) drop-shadow(0 0 14px rgba(180, 200, 230, 0.18));
+}
+.lightning.active { animation: lightningStrike 1100ms ease-out forwards; }
+@keyframes lightningStrike {
+  0%   { opacity: 0; }
+  3%   { opacity: 0.92; }
+  9%   { opacity: 0.18; }
+  14%  { opacity: 0.85; }
+  20%  { opacity: 0.05; }
+  100% { opacity: 0; }
+}
+@media (max-width: 540px) {
+  .lightning { width: 50vw; height: 44vh; }
+}
+
 /* blood moon: faster pulse + brighter when hovered or "struck" */
 .blood-moon.struck { animation: moonStruck 1100ms ease-out forwards; }
 @keyframes moonStruck {

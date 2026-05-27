@@ -1217,10 +1217,16 @@ function initThunder() {
   const moon = document.querySelector('.blood-moon');
   if (!flash) return;
 
+  const bolt = $('#lightning');
   function rumble() {
     flash.classList.remove('active');
     void flash.offsetWidth;
     flash.classList.add('active');
+    if (bolt) {
+      bolt.classList.remove('active');
+      void bolt.offsetWidth;
+      bolt.classList.add('active');
+    }
     if (moon) {
       moon.classList.remove('struck');
       void moon.offsetWidth;
@@ -1228,6 +1234,7 @@ function initThunder() {
     }
     setTimeout(() => {
       flash.classList.remove('active');
+      bolt && bolt.classList.remove('active');
       moon && moon.classList.remove('struck');
     }, 1200);
   }
@@ -1367,11 +1374,17 @@ function spawnSingleFeather() {
 }
 function triggerThunder() {
   const flash = $('#thunderFlash');
+  const bolt = $('#lightning');
   const moon = document.querySelector('.blood-moon');
   if (!flash) return;
   flash.classList.remove('active'); void flash.offsetWidth; flash.classList.add('active');
+  if (bolt) { bolt.classList.remove('active'); void bolt.offsetWidth; bolt.classList.add('active'); }
   if (moon) { moon.classList.remove('struck'); void moon.offsetWidth; moon.classList.add('struck'); }
-  setTimeout(() => { flash.classList.remove('active'); moon && moon.classList.remove('struck'); }, 1200);
+  setTimeout(() => {
+    flash.classList.remove('active');
+    bolt && bolt.classList.remove('active');
+    moon && moon.classList.remove('struck');
+  }, 1200);
 }
 function spawnCrowNow() {
   const host = $('#crowHost');
