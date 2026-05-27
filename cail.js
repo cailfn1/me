@@ -74,8 +74,8 @@ function setGreeting() {
   tagline.dataset.original = greeting;
 }
 const TRACKS = [
-  { title: 'aventure — lofi chill', src: 'assets/aventure-lofi-chill-nostalgic-469629.mp3' },
-  { title: 'lofi dreams — lofi jazz', src: 'assets/lofidreams-lofi-jazz-music-485312.mp3' },
+  { title: 'see u in hell — papa roach × hanumankind', src: 'assets/see-u-in-hell.mp3' },
+  { title: '少女A — siinamota', src: 'assets/shoujo-a.mp3' },
 ];
 
 let trackIdx = 0;
