@@ -611,6 +611,39 @@ body::before {
   80%      { rotate: -0.4deg; }
 }
 
+/* additional branches reaching across the top — feels like a partial canopy, not bunched up */
+.tree-branch-2 {
+  top: -28px;
+  right: 26%;
+  width: 340px;
+  height: 260px;
+  opacity: 0.78;
+  transform: rotate(6deg);
+  z-index: -1;
+}
+.tree-branch-3 {
+  top: -42px;
+  right: 50%;
+  width: 280px;
+  height: 200px;
+  opacity: 0.55;
+  transform: rotate(-3deg);
+  z-index: -1;
+  filter:
+    drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6))
+    drop-shadow(0 0 12px rgba(80, 8, 22, 0.35))
+    blur(0.4px);
+}
+@media (max-width: 1024px) {
+  .tree-branch-2 { width: 260px; height: 200px; right: 18%; opacity: 0.7; }
+  .tree-branch-3 { width: 220px; height: 160px; right: 44%; opacity: 0.45; }
+}
+@media (max-width: 720px) {
+  /* canopy gets crowded on mobile — hide the smallest one, scale others */
+  .tree-branch-2 { width: 180px; height: 140px; right: 12%; opacity: 0.6; }
+  .tree-branch-3 { display: none; }
+}
+
 /* mirrored smaller branch in bottom-left for symmetry */
 .tree-branch-bl {
   top: auto;
