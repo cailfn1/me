@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=58" />
+  <link rel="stylesheet" href="style.css?v=59" />
 </head>
 <body data-discord-id="1480622111339843876">
   <div class="blobs" aria-hidden="true">
@@ -211,9 +211,6 @@
     </svg>
   </div>
   <div class="crow-host" id="crowHost" aria-hidden="true"></div>
-  <div class="petal-counter" id="petalCounter" aria-hidden="true">
-    <span id="petalCount">0</span> <span class="petal-counter-label">petals fallen</span>
-  </div>
   <svg class="mountains" viewBox="0 0 1200 200" preserveAspectRatio="none" aria-hidden="true">
     <path d="M 0 200 L 0 130 L 80 95 L 150 145 L 230 75 L 320 130 L 410 60 L 500 115 L 590 85 L 680 130 L 770 70 L 860 110 L 950 80 L 1050 135 L 1130 95 L 1200 120 L 1200 200 Z" fill="#0a0518"/>
     <path d="M 0 200 L 0 165 L 90 130 L 180 165 L 270 120 L 360 155 L 460 110 L 560 150 L 660 125 L 760 160 L 870 130 L 970 155 L 1070 135 L 1200 160 L 1200 200 Z" fill="#0c0414"/>
@@ -484,8 +481,18 @@
 
   </main>
 
-  <div class="visitors" id="visitors">
-    <span id="visitorCount">--</span><span class="visitors-label"> visitors</span><span class="visitors-sep"> / </span><span class="visitors-version">v1.0</span>
+  <div class="status-bar" id="statusBar" aria-label="site status">
+    <div class="stat-pill">
+      <span class="stat-pill-num" id="visitorCount">--</span>
+      <span class="stat-pill-lbl">visitors</span>
+    </div>
+    <div class="stat-pill-sep"></div>
+    <div class="stat-pill">
+      <span class="stat-pill-num" id="petalCount">0</span>
+      <span class="stat-pill-lbl">petals fallen</span>
+    </div>
+    <div class="stat-pill-sep"></div>
+    <span class="status-version">v1.0</span>
   </div>
 
   <div class="music-widget" id="musicWidget">
