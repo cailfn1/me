@@ -1134,6 +1134,18 @@ function spawnPetalAt(originX, originY, opts = {}) {
   bumpPetalCount(1);
 }
 
+// nighttime mode: 11pm–5am local time → bg dims, fog thickens, petals fall slower, cat sleeps deeper
+function initNightMode() {
+  function check() {
+    const h = new Date().getHours();
+    const isNight = h >= 23 || h < 5;
+    document.body.classList.toggle('night-mode', isNight);
+  }
+  check();
+  // re-check every minute to catch the 11pm / 5am transitions
+  setInterval(check, 60 * 1000);
+}
+
 function initPetals() {
   const host = $('#petals');
   if (!host) return;
@@ -1149,7 +1161,10 @@ function initPetals() {
 
   function loop() {
     ambient();
-    setTimeout(loop, 2200 + Math.random() * 3000);
+    // at night: petals fall less often, like the tree is sleeping too
+    const isNight = document.body.classList.contains('night-mode');
+    const next = isNight ? (5500 + Math.random() * 5500) : (2200 + Math.random() * 3000);
+    setTimeout(loop, next);
   }
   setTimeout(loop, 4200);
 
@@ -2093,6 +2108,7 @@ runBoot().then(() => {
   initStarfield();
   initShootingStars();
   initFeathers();
+  initNightMode();
   initPetals();
   initCrow();
   initThunder();
