@@ -238,6 +238,19 @@ body::before {
 .saturn svg { width: 100%; height: 100%; display: block; }
 .saturn .saturn-halo { animation: saturnHaloPulse 14s ease-in-out infinite; transform-origin: 300px 300px; }
 
+/* the whole planet system rotates around the planet's center (300, 300) */
+/* and the front-ring clipPath shape rotates in lockstep so the seam stays glued */
+.saturn .saturn-spinner,
+.saturn .saturn-front-clip-shape {
+  transform-origin: 300px 300px;
+  animation: saturnSpin 90s linear infinite;
+  will-change: transform;
+}
+
+@keyframes saturnSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
 @keyframes saturnDrift {
   0%   { transform: translate3d(0, 0, 0); }
   100% { transform: translate3d(0, 14px, 0); }
