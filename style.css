@@ -1965,6 +1965,26 @@ body.light-chaos {
   text-shadow: 0 0 6px rgba(180, 30, 70, 0.6);
 }
 
+.lb-clear {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  color: rgba(236, 232, 240, 0.5);
+  background: rgba(180, 30, 70, 0.1);
+  border: 1px solid rgba(180, 30, 70, 0.25);
+  border-radius: 999px;
+  padding: 2px 10px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+.lb-clear:hover {
+  color: #ff5878;
+  border-color: rgba(255, 88, 120, 0.5);
+}
+.lb-clear[hidden] { display: none; }
+
 .lb-list {
   list-style: none;
   display: flex;

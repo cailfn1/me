@@ -809,6 +809,7 @@ function gbOwnerLogin() {
     if (confirm('sign out of owner mode?')) {
       try { localStorage.removeItem(GB_ADMIN_LS); } catch {}
       loadGuestbook();
+      if (typeof refreshLbOwner === 'function') refreshLbOwner();
       if (typeof showToast === 'function') showToast('owner mode off');
     }
     return;
@@ -817,7 +818,8 @@ function gbOwnerLogin() {
   if (k && k.trim()) {
     try { localStorage.setItem(GB_ADMIN_LS, k.trim()); } catch {}
     loadGuestbook();
-    if (typeof showToast === 'function') showToast('owner mode on — reply buttons live');
+    if (typeof refreshLbOwner === 'function') refreshLbOwner();
+    if (typeof showToast === 'function') showToast('owner mode on — reply + clear-board live');
   }
 }
 
@@ -2158,8 +2160,15 @@ function renderLeaderboard(entries, highlightIdx = -1) {
   });
 }
 
+// show the owner-only "clear board" button when owner mode is active
+function refreshLbOwner() {
+  const btn = $('#lbClear');
+  if (btn) btn.hidden = !(typeof gbIsOwner === 'function' && gbIsOwner());
+}
+
 // pull the global board; fall back to the local cache if offline
 async function fetchLeaderboard() {
+  refreshLbOwner();
   try {
     const res = await fetch(LB_API, { cache: 'no-store' });
     const data = await res.json();
@@ -2642,6 +2651,30 @@ function initSnake() {
   $('#game').addEventListener('click', (e) => {
     if (e.target.id === 'game') closeGame();
   });
+
+  // owner-only: wipe the global board (reuses guestbook owner mode)
+  const lbClear = $('#lbClear');
+  if (lbClear) {
+    lbClear.addEventListener('click', async () => {
+      if (!confirm('wipe the entire global leaderboard?')) return;
+      try {
+        const res = await fetch(LB_API + '?key=' + encodeURIComponent(gbAdminKey()), { method: 'DELETE' });
+        if (res.status === 401) {
+          try { localStorage.removeItem(GB_ADMIN_LS); } catch {}
+          if (typeof showToast === 'function') showToast('wrong admin key — owner mode off');
+          refreshLbOwner();
+          return;
+        }
+        const data = await res.json();
+        if (data.ok) {
+          if (typeof showToast === 'function') showToast('leaderboard cleared');
+          fetchLeaderboard();
+        }
+      } catch {
+        if (typeof showToast === 'function') showToast('network error — try again');
+      }
+    });
+  }
 
   fetchLeaderboard();
 }
