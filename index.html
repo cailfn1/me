@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=78" />
+  <link rel="stylesheet" href="style.css?v=80" />
 </head>
 <body data-discord-id="1480622111339843876">
   <div class="blobs" aria-hidden="true">
@@ -398,14 +398,21 @@
     <section class="row others-row" id="others">
       <div class="row-col">
         <div class="sec-heading"><span class="sec-dash"></span> guestbook <span id="gbCount" class="gb-count"></span></div>
-        <form id="gbForm" class="gb-form" autocomplete="off">
-          <input id="gbName" type="text" maxlength="24" placeholder="name (optional)" autocomplete="off" />
-          <input id="gbMsg" type="text" maxlength="200" placeholder="leave a message..." required />
-          <input id="gbWebsite" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="gb-honeypot" />
-          <button type="submit" class="gb-submit">sign</button>
-          <span id="gbCharCount" class="gb-charcount">0/200</span>
-        </form>
+        <p class="gb-intro">leave a message — i'd love to hear from you.</p>
         <ul id="gbList" class="gb-list" aria-live="polite"></ul>
+        <button type="button" id="gbToggle" class="gb-toggle">leave a message →</button>
+        <form id="gbForm" class="gb-form" autocomplete="off" hidden>
+          <input id="gbName" type="text" maxlength="24" placeholder="your name (optional)" autocomplete="off" />
+          <textarea id="gbMsg" maxlength="200" placeholder="your message..." rows="3" required></textarea>
+          <input id="gbWebsite" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="gb-honeypot" />
+          <div class="gb-form-foot">
+            <span id="gbCharCount" class="gb-charcount">0/200</span>
+            <div class="gb-form-actions">
+              <button type="button" id="gbCancel" class="gb-cancel">cancel</button>
+              <button type="submit" class="gb-submit">send →</button>
+            </div>
+          </div>
+        </form>
       </div>
       <div class="row-col">
         <div class="sec-heading"><span class="sec-dash"></span> cool stuff</div>
@@ -529,6 +536,6 @@
     </div>
   </div>
 
-  <script src="cail.js?v=79"></script>
+  <script src="cail.js?v=80"></script>
 </body>
 </html>

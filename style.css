@@ -2123,39 +2123,96 @@ body.light-chaos {
   50% { height: 100%; }
 }
 
-.gb-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
+.gb-intro {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--muted);
+  opacity: 0.75;
+  margin: 4px 0 14px;
 }
 
-.gb-form input {
-  background: rgba(10, 10, 14, 0.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+/* collapsible "leave a message" toggle */
+.gb-toggle {
+  margin-top: 12px;
+  background: rgba(16, 10, 18, 0.55);
+  border: 1px solid rgba(180, 30, 70, 0.25);
+  color: rgba(236, 232, 240, 0.8);
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+.gb-toggle:hover {
+  border-color: rgba(255, 138, 171, 0.5);
+  color: #ff8aab;
+  transform: translateY(-1px);
+}
+.gb-toggle[hidden] { display: none; }
+
+/* the expanded form (vertical) */
+.gb-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 14px;
+  background: rgba(16, 10, 18, 0.5);
+  border: 1px solid rgba(180, 30, 70, 0.22);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: gbFormIn 0.22s ease;
+}
+.gb-form[hidden] { display: none; }
+@keyframes gbFormIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.gb-form input,
+.gb-form textarea {
+  background: rgba(8, 5, 10, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text);
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: 9px 12px;
+  border-radius: 8px;
   font-family: inherit;
   font-size: 12.5px;
   outline: none;
+  width: 100%;
   transition: border-color 0.15s ease;
 }
-
-.gb-form input:focus {
-  border-color: rgba(180, 30, 70, 0.5);
+.gb-form textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+.gb-form input:focus,
+.gb-form textarea:focus {
+  border-color: rgba(180, 30, 70, 0.55);
 }
 
-#gbName {
-  width: 130px;
+.gb-form-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
+.gb-form-actions { display: flex; align-items: center; gap: 8px; }
 
-#gbMsg {
-  flex: 1;
-  min-width: 140px;
+.gb-cancel {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--muted);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12.5px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
 }
+.gb-cancel:hover { border-color: rgba(255, 255, 255, 0.25); color: var(--text); }
 
 /* honeypot — visually gone, off-screen, but bots still fill it */
 .gb-honeypot {
@@ -2218,9 +2275,9 @@ body.light-chaos {
 
 .gb-entry {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 9px 12px;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 13px;
   background: rgba(16, 10, 18, 0.5);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -2233,22 +2290,15 @@ body.light-chaos {
 }
 .gb-entry:hover { border-color: rgba(180, 30, 70, 0.28); }
 
-.gb-entry-main { flex: 1; min-width: 0; }
+.gb-entry-top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
 
 .gb-entry .gb-author {
   color: #ff8aab;
   font-weight: 500;
-  margin-right: 7px;
-}
-
-.gb-entry .gb-text { color: rgba(236, 232, 240, 0.92); }
-
-.gb-entry-side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  flex-shrink: 0;
 }
 
 .gb-entry .gb-time {
@@ -2257,6 +2307,13 @@ body.light-chaos {
   font-size: 9.5px;
   letter-spacing: 0.04em;
   white-space: nowrap;
+}
+
+.gb-entry .gb-like { margin-left: auto; }
+
+.gb-entry .gb-text {
+  color: rgba(236, 232, 240, 0.9);
+  line-height: 1.5;
 }
 
 .gb-like {

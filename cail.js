@@ -827,16 +827,14 @@ function renderGuestbook(messages) {
     const when = m.ts ? timeAgo(Math.floor(m.ts / 1000)) : '';
     const isLiked = liked.has(m.id);
     li.innerHTML =
-      `<div class="gb-entry-main">` +
+      `<div class="gb-entry-top">` +
         `<span class="gb-author">${escapeHtml(m.name)}</span>` +
-        `<span class="gb-text">${escapeHtml(m.text)}</span>` +
-      `</div>` +
-      `<div class="gb-entry-side">` +
+        `<span class="gb-time">${when}</span>` +
         `<button class="gb-like${isLiked ? ' liked' : ''}" data-id="${m.id}" aria-label="like" ${isLiked ? 'disabled' : ''}>` +
           `<span class="gb-like-heart">♥</span><span class="gb-like-count">${m.likes || 0}</span>` +
         `</button>` +
-        `<span class="gb-time">${when}</span>` +
-      `</div>`;
+      `</div>` +
+      `<div class="gb-text">${escapeHtml(m.text)}</div>`;
     list.appendChild(li);
   });
 
@@ -879,6 +877,22 @@ function initGuestbook() {
   if (!form) return;
   loadGuestbook();
 
+  // collapsible form (akryst-style): toggle button reveals the form
+  const toggle = $('#gbToggle');
+  const cancel = $('#gbCancel');
+  const openForm = () => {
+    form.hidden = false;
+    if (toggle) toggle.hidden = true;
+    const msgEl = $('#gbMsg');
+    if (msgEl) msgEl.focus();
+  };
+  const closeForm = () => {
+    form.hidden = true;
+    if (toggle) toggle.hidden = false;
+  };
+  if (toggle) toggle.addEventListener('click', openForm);
+  if (cancel) cancel.addEventListener('click', closeForm);
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const nameEl = $('#gbName');
@@ -902,6 +916,7 @@ function initGuestbook() {
       if (data.ok) {
         msgEl.value = '';
         if ($('#gbCharCount')) $('#gbCharCount').textContent = '0/200';
+        closeForm();
         await loadGuestbook();
       } else if (typeof showToast === 'function') {
         showToast(data.error || 'could not post — try again');
