@@ -373,9 +373,59 @@ function applyDiscordAvatar(user) {
   }
 }
 
+// rotating "currently:" lines shown when Discord activity is idle
+const ABOUT_NOW_IDLE = [
+  'watching the moon',
+  'lifting in the dark',
+  'reading the manga',
+  'tweaking the css',
+  'overthinking it',
+  'rewatching frieren',
+  'making tea, probably',
+  'staring at the gym ceiling',
+  'losing at snake',
+];
+let _aboutNowIdleIdx = -1;
+let _aboutNowIdleTimer = null;
+let _aboutNowLive = false; // true while real Discord activity is showing
+
+function setAboutNow(text, opts = {}) {
+  const el = document.getElementById('aboutNowText');
+  const wrap = document.getElementById('aboutNow');
+  if (!el || !wrap) return;
+  if (el.textContent === text) return;
+  el.classList.add('fade');
+  setTimeout(() => {
+    el.textContent = text;
+    wrap.classList.toggle('spotify', !!opts.spotify);
+    el.classList.remove('fade');
+  }, 220);
+}
+
+function startAboutNowIdleRotation() {
+  if (_aboutNowIdleTimer) return;
+  const tick = () => {
+    if (_aboutNowLive) return; // don't fight a real status
+    _aboutNowIdleIdx = (_aboutNowIdleIdx + 1) % ABOUT_NOW_IDLE.length;
+    setAboutNow(ABOUT_NOW_IDLE[_aboutNowIdleIdx]);
+  };
+  tick();
+  _aboutNowIdleTimer = setInterval(tick, 7000);
+}
+
+function initAboutPursuits() {
+  // gym → easter-egg toast (anime + code already have href anchors)
+  document.querySelectorAll('.as-word[data-word="gym"]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (typeof showToast === 'function') showToast('no rest day. no skip day. 🏋️');
+    });
+  });
+}
+
 function initLanyard() {
   const id = document.body.dataset.discordId;
-  if (!id) return;
+  if (!id) { startAboutNowIdleRotation(); return; }
   const statusDot = $('#statusDot');
   const avatarEl = $('#avatar');
   const activity = $('#activity');
@@ -429,6 +479,17 @@ function initLanyard() {
         activityRow.classList.remove('spotify');
       }
       if (activityArt) activityArt.classList.remove('show');
+    }
+
+    // mirror the live activity into the about-me "currently:" line
+    if (label) {
+      _aboutNowLive = true;
+      // strip the existing prefix glyph so the badge handles it visually
+      const clean = label.replace(/^[▶♪]\s*/, '').trim();
+      setAboutNow(clean, { spotify: isSpotify });
+    } else {
+      _aboutNowLive = false;
+      startAboutNowIdleRotation();
     }
   };
   let ws;
@@ -2698,6 +2759,9 @@ runBoot().then(() => {
   initKonami();
   initAvatarStreak();
   initLanyard();
+  initAboutPursuits();
+  // if Lanyard hasn't delivered a live status within 4s, start the idle rotation
+  setTimeout(() => { if (!_aboutNowLive) startAboutNowIdleRotation(); }, 4000);
   initAniList();
   initLastfm();
   initTerminal();
