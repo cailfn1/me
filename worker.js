@@ -13,6 +13,10 @@ const LB_MAX = 25;        // how many we retain in KV
 const LB_NAME_MAX = 12;   // max chars for a leaderboard name
 const SCORE_CAP = 99999;  // sanity clamp on submitted scores
 
+// visitor geo / weather / souls
+const SOULS_KEY = 'souls-geo'; // { "US": 12, "JP": 3, ... } — country codes ONLY, never IPs/cities
+const WX_TTL = 600;            // weather cache seconds (keyed by coarse lat/lon)
+
 // light hate-only filter (swearing is fine, slurs are not)
 const BANNED = ['nigger', 'nigga', 'faggot', 'retard', 'kike', 'chink', 'spic', 'tranny'];
 
@@ -34,6 +38,52 @@ function hasBanned(text) {
 
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+// WMO weather code → our simple atmosphere buckets
+function wmoToWeather(code) {
+  if (code == null) return 'clear';
+  if (code === 0) return 'clear';
+  if (code === 1 || code === 2) return 'clouds';
+  if (code === 3) return 'clouds';
+  if (code === 45 || code === 48) return 'fog';
+  if (code >= 51 && code <= 67) return 'rain';   // drizzle + rain
+  if (code >= 71 && code <= 77) return 'snow';
+  if (code >= 80 && code <= 82) return 'rain';    // rain showers
+  if (code === 85 || code === 86) return 'snow';
+  if (code >= 95) return 'storm';                 // thunderstorm
+  return 'clouds';
+}
+
+// 2-letter country code → flag emoji (regional indicators)
+function countryFlag(cc) {
+  if (!cc || cc.length !== 2) return '';
+  const A = 0x1f1e6;
+  const up = cc.toUpperCase();
+  return String.fromCodePoint(A + (up.charCodeAt(0) - 65)) +
+         String.fromCodePoint(A + (up.charCodeAt(1) - 65));
+}
+
+async function getWeather(env, lat, lon) {
+  if (lat == null || lon == null) return { weather: 'clear', temp: null, isDay: true };
+  const key = `wx:${(+lat).toFixed(1)},${(+lon).toFixed(1)}`;
+  const cached = await env.GUESTBOOK.get(key);
+  if (cached) { try { return JSON.parse(cached); } catch {} }
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${(+lat).toFixed(2)}&longitude=${(+lon).toFixed(2)}&current=temperature_2m,weather_code,is_day`;
+    const r = await fetch(url, { cf: { cacheTtl: WX_TTL } });
+    const j = await r.json();
+    const cur = j.current || {};
+    const out = {
+      weather: wmoToWeather(cur.weather_code),
+      temp: typeof cur.temperature_2m === 'number' ? Math.round(cur.temperature_2m) : null,
+      isDay: cur.is_day !== 0,
+    };
+    await env.GUESTBOOK.put(key, JSON.stringify(out), { expirationTtl: WX_TTL });
+    return out;
+  } catch {
+    return { weather: 'clear', temp: null, isDay: true };
+  }
 }
 
 async function getMessages(env) {
@@ -147,6 +197,47 @@ async function handleApi(request, env, url) {
       await env.GUESTBOOK.delete(LB_KEY);
     }
     return json({ ok: true });
+  }
+
+  // POST /api/visit → geo + live weather + log the soul's country (privacy: country only)
+  if (path === '/api/visit' && request.method === 'POST') {
+    let body = {};
+    try { body = await request.json(); } catch {}
+    const cf = request.cf || {};
+    const country = (cf.country && cf.country !== 'XX') ? cf.country : '';
+    const wx = await getWeather(env, cf.latitude, cf.longitude);
+
+    // souls tally — only increment for a genuinely new visitor
+    let souls = {};
+    const rawSouls = await env.GUESTBOOK.get(SOULS_KEY);
+    try { souls = rawSouls ? JSON.parse(rawSouls) : {}; } catch { souls = {}; }
+    if (body.isNew && country) {
+      souls[country] = (souls[country] || 0) + 1;
+      await env.GUESTBOOK.put(SOULS_KEY, JSON.stringify(souls));
+    }
+    const total = Object.values(souls).reduce((a, b) => a + b, 0);
+
+    return json({
+      ok: true,
+      city: cf.city || '',
+      region: cf.region || '',
+      country,
+      flag: countryFlag(country),
+      timezone: cf.timezone || '',
+      weather: wx.weather,
+      temp: wx.temp,
+      isDay: wx.isDay,
+      souls: { total, countries: Object.keys(souls).length, byCountry: souls },
+    });
+  }
+
+  // GET /api/souls → the global souls tally (country codes only)
+  if (path === '/api/souls' && request.method === 'GET') {
+    let souls = {};
+    const rawSouls = await env.GUESTBOOK.get(SOULS_KEY);
+    try { souls = rawSouls ? JSON.parse(rawSouls) : {}; } catch { souls = {}; }
+    const total = Object.values(souls).reduce((a, b) => a + b, 0);
+    return json({ ok: true, total, countries: Object.keys(souls).length, byCountry: souls });
   }
 
   // POST /api/guestbook/reply → owner reply under a message (key = ADMIN_KEY secret)
