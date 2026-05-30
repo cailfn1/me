@@ -17,6 +17,10 @@ const SCORE_CAP = 99999;  // sanity clamp on submitted scores
 const SOULS_KEY = 'souls-geo'; // { "US": 12, "JP": 3, ... } — country codes ONLY, never IPs/cities
 const WX_TTL = 600;            // weather cache seconds (keyed by coarse lat/lon)
 
+// per-IP anti-spam (counts within a rolling 60s window — KV TTL minimum)
+const LB_RATE_MAX = 8;   // max score submits / minute / IP
+const SOUL_RATE_MAX = 3; // max new-soul increments / minute / IP
+
 // light hate-only filter (swearing is fine, slurs are not)
 const BANNED = ['nigger', 'nigga', 'faggot', 'retard', 'kike', 'chink', 'spic', 'tranny'];
 
@@ -84,6 +88,14 @@ async function getWeather(env, lat, lon) {
   } catch {
     return { weather: 'clear', temp: null, isDay: true };
   }
+}
+
+// per-IP counter limiter: returns true if over the limit (and won't refresh TTL when blocked)
+async function bumpRate(env, key, max) {
+  const cur = parseInt(await env.GUESTBOOK.get(key) || '0', 10);
+  if (cur >= max) return true;
+  await env.GUESTBOOK.put(key, String(cur + 1), { expirationTtl: 60 });
+  return false;
 }
 
 async function getMessages(env) {
@@ -164,6 +176,9 @@ async function handleApi(request, env, url) {
   if (path === '/api/leaderboard' && request.method === 'POST') {
     let body;
     try { body = await request.json(); } catch { return json({ ok: false, error: 'bad request' }, 400); }
+    if (await bumpRate(env, 'rl-lb:' + ip, LB_RATE_MAX)) {
+      return json({ ok: false, error: 'slow down — too many submissions' }, 429);
+    }
     const name = clean(body.name, LB_NAME_MAX) || 'anon';
     if (hasBanned(name)) return json({ ok: false, error: 'be nice.' }, 400);
     let score = parseInt(body.score, 10);
@@ -211,7 +226,7 @@ async function handleApi(request, env, url) {
     let souls = {};
     const rawSouls = await env.GUESTBOOK.get(SOULS_KEY);
     try { souls = rawSouls ? JSON.parse(rawSouls) : {}; } catch { souls = {}; }
-    if (body.isNew && country) {
+    if (body.isNew && country && !(await bumpRate(env, 'rl-soul:' + ip, SOUL_RATE_MAX))) {
       souls[country] = (souls[country] || 0) + 1;
       await env.GUESTBOOK.put(SOULS_KEY, JSON.stringify(souls));
     }
