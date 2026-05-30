@@ -42,7 +42,8 @@ html { scrollbar-color: rgba(180, 30, 70, 0.45) transparent; scrollbar-width: th
   .stars .star,
   .activity-row.spotify .activity-art,
   .music-eq.fake span,
-  .activity-eq span {
+  .activity-eq span,
+  .hero-name {
     animation: none !important;
   }
   .thunder-flash.active, .lightning.active { animation-duration: 200ms !important; }
@@ -57,7 +58,7 @@ html { scrollbar-color: rgba(180, 30, 70, 0.45) transparent; scrollbar-width: th
   --muted: #8a8a8a;
   --accent: #7289da;
   --accent-hover: #8ea1e1;
-  --green: #43b581;
+  --green: #4f9e86;
   --yellow: #f1c40f;
   --red: #e84a4a;
   --idle: #faa61a;
@@ -1007,6 +1008,26 @@ body.night-mode .star {
   row-gap: 28px;
   align-items: center;
   max-width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* huge faint kanji watermark balancing the empty right half (月 = moon) */
+.hero-watermark {
+  position: absolute;
+  right: 2%;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(16rem, 34vw, 30rem);
+  line-height: 1;
+  color: rgba(180, 30, 70, 0.05);
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+@media (max-width: 720px) {
+  .hero-watermark { font-size: 44vw; opacity: 0.55; right: -2%; }
 }
 
 .hero .avatar {
@@ -1054,6 +1075,22 @@ body.night-mode .star {
     0 0 18px rgba(180, 30, 70, 0.55),
     0 0 38px rgba(120, 10, 40, 0.4),
     0 4px 30px rgba(0, 0, 0, 0.6);
+  animation: nameBreath 5s ease-in-out infinite;
+}
+
+@keyframes nameBreath {
+  0%, 100% {
+    text-shadow:
+      0 0 18px rgba(180, 30, 70, 0.55),
+      0 0 38px rgba(120, 10, 40, 0.4),
+      0 4px 30px rgba(0, 0, 0, 0.6);
+  }
+  50% {
+    text-shadow:
+      0 0 24px rgba(200, 45, 85, 0.75),
+      0 0 52px rgba(140, 16, 50, 0.6),
+      0 4px 30px rgba(0, 0, 0, 0.6);
+  }
 }
 
 .hero-name.glitch {
@@ -1122,6 +1159,8 @@ body.night-mode .star {
   flex-direction: column;
   gap: 2px;
   font-family: 'JetBrains Mono', monospace;
+  position: relative;
+  z-index: 1;
 }
 
 .hero-nav a {
@@ -1146,18 +1185,19 @@ body.night-mode .star {
   top: 50%;
   width: 0;
   height: 1px;
-  background: var(--accent);
+  background: linear-gradient(90deg, #ff8aab, rgba(180, 30, 70, 0.3));
   transform: translateY(-50%);
-  transition: width 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: width 0.25s cubic-bezier(0.4, 0.0, 0.2, 1), box-shadow 0.25s ease;
 }
 
 .hero-nav a:hover {
   color: var(--text);
-  padding-left: 36px;
+  padding-left: 40px;
 }
 
 .hero-nav a:hover::before {
-  width: 26px;
+  width: 34px;
+  box-shadow: 0 0 8px rgba(180, 30, 70, 0.5);
 }
 
 .hero-nav .nav-num {
@@ -1196,15 +1236,15 @@ body.night-mode .star {
   --ring-color: #43b581;
 }
 
-/* status-driven ring around the avatar */
+/* cool frost ring around the avatar (decorative — status shown by the dot) */
 .avatar::before {
   content: '';
   position: absolute;
   inset: -7px;
   border-radius: 50%;
-  border: 2px solid var(--ring-color);
+  border: 2px solid rgba(216, 222, 232, 0.4);
   opacity: 0.85;
-  box-shadow: 0 0 18px var(--ring-color), inset 0 0 12px color-mix(in srgb, var(--ring-color) 35%, transparent);
+  box-shadow: 0 0 16px rgba(216, 222, 232, 0.22), inset 0 0 12px rgba(216, 222, 232, 0.12);
   animation: ringPulse 2.6s ease-in-out infinite;
   pointer-events: none;
   z-index: 1;
@@ -1382,14 +1422,14 @@ body.night-mode .star {
   --fg: #ffffff;
   width: 38px;
   height: 38px;
-  background: color-mix(in srgb, var(--c) 16%, #0c0c10 84%);
-  border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
+  background: rgba(16, 14, 22, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--c);
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  color: rgba(206, 212, 226, 0.62);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
   position: relative;
 }
 
@@ -1427,6 +1467,7 @@ body.night-mode .star {
 
 .skill-icon:hover {
   transform: translateY(-2px);
+  color: var(--c);
   background: color-mix(in srgb, var(--c) 28%, #0c0c10 72%);
   border-color: color-mix(in srgb, var(--c) 60%, transparent);
   box-shadow: 0 6px 18px color-mix(in srgb, var(--c) 30%, transparent);
