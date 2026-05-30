@@ -578,6 +578,108 @@ async function initVisit() {
   } catch {}
 }
 
+// ===== live ghost cursors — Cloudflare Durable Object presence (wss://.../api/presence) =====
+function initPresence() {
+  let ws = null;
+  let myId = null;
+  let reconnectT = null;
+  const ghosts = new Map(); // id -> { el, x, y, tx, ty, lastSeen }
+  let lastSend = 0;
+
+  let chip = document.getElementById('soulsNow');
+  if (!chip) {
+    chip = document.createElement('div');
+    chip.id = 'soulsNow';
+    chip.className = 'souls-now';
+    chip.innerHTML = '<span class="souls-now-dot" aria-hidden="true"></span><span class="souls-now-text"></span>';
+    document.body.appendChild(chip);
+  }
+  const chipText = chip.querySelector('.souls-now-text');
+
+  function updateCount(n) {
+    // only reveal when someone ELSE is here (n >= 2) — keeps it magical
+    if (n >= 2) {
+      chipText.textContent = `${n} souls haunting this page`;
+      chip.classList.add('show');
+    } else {
+      chip.classList.remove('show');
+    }
+  }
+
+  function moveGhost(id, x, y) {
+    if (id === myId || reducedMotion) return;
+    let g = ghosts.get(id);
+    const px = x * window.innerWidth;
+    const py = y * window.innerHeight;
+    if (!g) {
+      const el = document.createElement('div');
+      el.className = 'ghost-cursor';
+      el.innerHTML = '<span class="ghost-wisp"></span><span class="ghost-label">a soul</span>';
+      document.body.appendChild(el);
+      g = { el, x: px, y: py, tx: px, ty: py };
+      ghosts.set(id, g);
+    }
+    g.tx = px; g.ty = py; g.lastSeen = performance.now();
+  }
+  function removeGhost(id) {
+    const g = ghosts.get(id);
+    if (g) { g.el.remove(); ghosts.delete(id); }
+  }
+  function clearGhosts() { ghosts.forEach(g => g.el.remove()); ghosts.clear(); }
+
+  // smooth drift loop
+  if (!reducedMotion) {
+    const loop = () => {
+      const now = performance.now();
+      ghosts.forEach((g, id) => {
+        if (now - (g.lastSeen || 0) > 10000) { removeGhost(id); return; }
+        g.x += (g.tx - g.x) * 0.16;
+        g.y += (g.ty - g.y) * 0.16;
+        g.el.style.transform = `translate(${g.x}px, ${g.y}px)`;
+      });
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  }
+
+  window.addEventListener('pointermove', (e) => {
+    if (!ws || ws.readyState !== 1) return;
+    const now = performance.now();
+    if (now - lastSend < 60) return; // ~16 msgs/sec
+    lastSend = now;
+    try {
+      ws.send(JSON.stringify({
+        type: 'move',
+        x: +(e.clientX / window.innerWidth).toFixed(4),
+        y: +(e.clientY / window.innerHeight).toFixed(4),
+      }));
+    } catch {}
+  }, { passive: true });
+
+  function connect() {
+    try {
+      const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+      ws = new WebSocket(proto + location.host + '/api/presence');
+    } catch { return; }
+    ws.addEventListener('message', (ev) => {
+      let m; try { m = JSON.parse(ev.data); } catch { return; }
+      if (m.type === 'welcome') { myId = m.id; updateCount(m.count); }
+      else if (m.type === 'count') updateCount(m.count);
+      else if (m.type === 'cursor') moveGhost(m.id, m.x, m.y);
+      else if (m.type === 'leave') removeGhost(m.id);
+    });
+    ws.addEventListener('close', () => {
+      clearGhosts();
+      chip.classList.remove('show');
+      clearTimeout(reconnectT);
+      reconnectT = setTimeout(connect, 6000); // gentle reconnect
+    });
+    ws.addEventListener('error', () => { try { ws.close(); } catch {} });
+  }
+
+  connect();
+}
+
 function initLanyard() {
   const id = document.body.dataset.discordId;
   if (!id) { startAboutNowIdleRotation(); return; }
@@ -2915,6 +3017,7 @@ runBoot().then(() => {
   initAvatarStreak();
   initLanyard();
   initVisit();
+  initPresence();
   initAboutPursuits();
   // if Lanyard hasn't delivered a live status within 4s, start the idle rotation
   setTimeout(() => { if (!_aboutNowLive) startAboutNowIdleRotation(); }, 4000);

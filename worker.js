@@ -280,9 +280,65 @@ async function handleApi(request, env, url) {
   return json({ ok: false, error: 'not found' }, 404);
 }
 
+// ===== live presence (ghost cursors) — Durable Object with WebSocket hibernation =====
+export class PresenceRoom {
+  constructor(state) {
+    this.state = state;
+  }
+
+  broadcast(obj, except) {
+    const msg = JSON.stringify(obj);
+    for (const ws of this.state.getWebSockets()) {
+      if (ws === except) continue;
+      try { ws.send(msg); } catch {}
+    }
+  }
+
+  async fetch(request) {
+    if (request.headers.get('Upgrade') !== 'websocket') {
+      return new Response('expected websocket', { status: 426 });
+    }
+    const pair = new WebSocketPair();
+    const client = pair[0];
+    const server = pair[1];
+    this.state.acceptWebSocket(server);
+    const id = Math.random().toString(36).slice(2, 8);
+    server.serializeAttachment({ id });
+    const count = this.state.getWebSockets().length;
+    try { server.send(JSON.stringify({ type: 'welcome', id, count })); } catch {}
+    this.broadcast({ type: 'count', count }, server);
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  async webSocketMessage(ws, message) {
+    let data;
+    try { data = JSON.parse(message); } catch { return; }
+    if (data.type === 'move') {
+      const att = ws.deserializeAttachment() || {};
+      this.broadcast({ type: 'cursor', id: att.id, x: data.x, y: data.y }, ws);
+    }
+  }
+
+  async webSocketClose(ws) {
+    const att = ws.deserializeAttachment() || {};
+    this.broadcast({ type: 'leave', id: att.id }, ws);
+    this.broadcast({ type: 'count', count: this.state.getWebSockets().length - 1 }, ws);
+  }
+
+  async webSocketError(ws) {
+    try { ws.close(); } catch {}
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    // live presence websocket → Durable Object (single global room)
+    if (url.pathname === '/api/presence') {
+      if (!env.PRESENCE) return new Response('presence unavailable', { status: 503 });
+      const stub = env.PRESENCE.get(env.PRESENCE.idFromName('global'));
+      return stub.fetch(request);
+    }
     if (url.pathname.startsWith('/api/')) {
       return handleApi(request, env, url);
     }

@@ -9,5 +9,13 @@
   },
   "kv_namespaces": [
     { "binding": "GUESTBOOK", "id": "a844a1a139a344ba8e47df3e085da7d4" }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "PRESENCE", "class_name": "PresenceRoom" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["PresenceRoom"] }
   ]
 }
