@@ -2175,12 +2175,12 @@ async function fetchLeaderboard() {
 
 // submit a score to the global board; highlight your row on return
 async function submitScore(name, score) {
-  const clean3 = (name || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'AAA';
+  const cleanName = (name || '').replace(/\s+/g, ' ').trim().slice(0, 12) || 'anon';
   try {
     const res = await fetch(LB_API, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name: clean3, score }),
+      body: JSON.stringify({ name: cleanName, score }),
     });
     const data = await res.json();
     if (data.ok && Array.isArray(data.scores)) {
@@ -2191,11 +2191,11 @@ async function submitScore(name, score) {
   } catch {}
   // offline fallback: update local cache only
   const entries = loadLeaderboardLocal();
-  entries.push({ n: clean3, s: score });
+  entries.push({ n: cleanName, s: score });
   entries.sort((a, b) => b.s - a.s);
   const trimmed = entries.slice(0, 10);
   saveLeaderboardLocal(trimmed);
-  renderLeaderboard(trimmed, trimmed.findIndex(e => e.n === clean3 && e.s === score));
+  renderLeaderboard(trimmed, trimmed.findIndex(e => e.n === cleanName && e.s === score));
 }
 
 function snakeFreeCell() {
@@ -2513,7 +2513,7 @@ function snakeGameOver() {
   title.textContent = `game over — ${s.score}`;
 
   if (s.score > 0) {
-    sub.textContent = 'enter initials for the global board';
+    sub.textContent = 'enter your name for the global board';
     initials.hidden = false;
     initials.value = '';
     startBtn.textContent = 'submit & play again';

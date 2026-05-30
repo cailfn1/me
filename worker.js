@@ -9,8 +9,9 @@ const RATE_LIMIT_SEC = 60; // KV expirationTtl minimum is 60s
 
 // snake global leaderboard
 const LB_KEY = 'snake-scores';
-const LB_MAX = 25;       // how many we retain in KV
-const SCORE_CAP = 99999; // sanity clamp on submitted scores
+const LB_MAX = 25;        // how many we retain in KV
+const LB_NAME_MAX = 12;   // max chars for a leaderboard name
+const SCORE_CAP = 99999;  // sanity clamp on submitted scores
 
 // light hate-only filter (swearing is fine, slurs are not)
 const BANNED = ['nigger', 'nigga', 'faggot', 'retard', 'kike', 'chink', 'spic', 'tranny'];
@@ -113,8 +114,8 @@ async function handleApi(request, env, url) {
   if (path === '/api/leaderboard' && request.method === 'POST') {
     let body;
     try { body = await request.json(); } catch { return json({ ok: false, error: 'bad request' }, 400); }
-    let name = clean(body.name, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
-    name = name.slice(0, 3) || 'AAA';
+    const name = clean(body.name, LB_NAME_MAX) || 'anon';
+    if (hasBanned(name)) return json({ ok: false, error: 'be nice.' }, 400);
     let score = parseInt(body.score, 10);
     if (!Number.isFinite(score) || score < 1) return json({ ok: false, error: 'invalid score' }, 400);
     score = Math.min(score, SCORE_CAP);
@@ -128,6 +129,24 @@ async function handleApi(request, env, url) {
     await env.GUESTBOOK.put(LB_KEY, JSON.stringify(scores));
     const rank = scores.findIndex(x => x.ts === entry.ts && x.n === name && x.s === score);
     return json({ ok: true, scores: scores.slice(0, 10), rank });
+  }
+
+  // DELETE /api/leaderboard?key=..[&ts=..] → admin clear (key = ADMIN_KEY secret)
+  // with ts → remove one score; without → wipe the whole board
+  if (path === '/api/leaderboard' && request.method === 'DELETE') {
+    const key = url.searchParams.get('key');
+    if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) return json({ ok: false, error: 'unauthorized' }, 401);
+    const ts = url.searchParams.get('ts');
+    if (ts) {
+      const raw = await env.GUESTBOOK.get(LB_KEY);
+      let scores = [];
+      try { scores = raw ? JSON.parse(raw) : []; } catch { scores = []; }
+      scores = scores.filter(x => String(x.ts) !== String(ts));
+      await env.GUESTBOOK.put(LB_KEY, JSON.stringify(scores));
+    } else {
+      await env.GUESTBOOK.delete(LB_KEY);
+    }
+    return json({ ok: true });
   }
 
   // POST /api/guestbook/reply → owner reply under a message (key = ADMIN_KEY secret)
