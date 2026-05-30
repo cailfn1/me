@@ -34,10 +34,6 @@ html { scrollbar-color: rgba(180, 30, 70, 0.45) transparent; scrollbar-width: th
 
 /* ===== respect prefers-reduced-motion globally ===== */
 @media (prefers-reduced-motion: reduce) {
-  .saturn .saturn-spinner,
-  .saturn .saturn-front-clip-shape,
-  .saturn .saturn-halo,
-  .saturn,
   .blood-moon,
   .ground-fog,
   .fog-wisp,
@@ -265,71 +261,6 @@ body::before {
   0%, 100% { transform: translate(0, 0) scale(0.95); }
   50%      { transform: translate(-15vw, 12vh) scale(1.2); }
 }
-
-/* ===== Saturn (Interstellar vibe, top-left) ===== */
-.saturn {
-  position: fixed;
-  top: -28vh;
-  left: -22vw;
-  width: 86vh;
-  height: 86vh;
-  z-index: -3;
-  pointer-events: none;
-  opacity: 0.94;
-  filter:
-    drop-shadow(0 12px 40px rgba(0, 0, 0, 0.75))
-    drop-shadow(0 0 80px rgba(180, 140, 90, 0.14))
-    drop-shadow(0 0 140px rgba(120, 90, 60, 0.08));
-  will-change: transform;
-  animation: saturnDrift 90s ease-in-out infinite alternate;
-}
-.saturn svg { width: 100%; height: 100%; display: block; }
-.saturn .saturn-halo { animation: saturnHaloPulse 14s ease-in-out infinite; transform-origin: 300px 300px; }
-
-/* the whole planet system rotates around the planet's center (300, 300) */
-/* and the front-ring clipPath shape rotates in lockstep so the seam stays glued */
-.saturn .saturn-spinner,
-.saturn .saturn-front-clip-shape {
-  transform-origin: 300px 300px;
-  animation: saturnSpin 90s linear infinite;
-  will-change: transform;
-}
-
-@keyframes saturnSpin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-@keyframes saturnDrift {
-  0%   { transform: translate3d(0, 0, 0); }
-  100% { transform: translate3d(0, 14px, 0); }
-}
-@keyframes saturnHaloPulse {
-  0%, 100% { opacity: 1;    transform: scale(1); }
-  50%      { opacity: 1.05; transform: scale(1.025); }
-}
-
-/* keep it composed on smaller screens */
-@media (max-width: 900px) {
-  .saturn {
-    width: 70vh;
-    height: 70vh;
-    top: -24vh;
-    left: -28vw;
-    opacity: 0.85;
-  }
-}
-@media (max-width: 540px) {
-  .saturn {
-    width: 56vh;
-    height: 56vh;
-    top: -20vh;
-    left: -30vw;
-    opacity: 0.78;
-  }
-}
-
-/* night mode: Saturn dims slightly to match the rest of the void */
-body.night-mode .saturn { opacity: 0.7; filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 80px rgba(180, 140, 90, 0.08)); }
 
 /* ===== blood moon ===== */
 .blood-moon {

@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=70" />
+  <link rel="stylesheet" href="style.css?v=71" />
 </head>
 <body data-discord-id="1480622111339843876">
   <div class="blobs" aria-hidden="true">
@@ -28,86 +28,6 @@
     <div class="blob blob-2"></div>
     <div class="blob blob-3"></div>
     <div class="blob blob-4"></div>
-  </div>
-  <div class="saturn" aria-hidden="true">
-    <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="saturnBody" cx="38%" cy="30%" r="68%">
-          <stop offset="0%" stop-color="#f0dcb4"/>
-          <stop offset="20%" stop-color="#c8a880"/>
-          <stop offset="50%" stop-color="#7a5e44"/>
-          <stop offset="85%" stop-color="#2a1e14"/>
-          <stop offset="100%" stop-color="#0a0604"/>
-        </radialGradient>
-        <radialGradient id="saturnHalo" cx="50%" cy="50%" r="50%">
-          <stop offset="32%" stop-color="rgba(255, 215, 170, 0.20)"/>
-          <stop offset="55%" stop-color="rgba(200, 160, 110, 0.08)"/>
-          <stop offset="80%" stop-color="rgba(160, 120, 80, 0.03)"/>
-          <stop offset="100%" stop-color="transparent"/>
-        </radialGradient>
-        <radialGradient id="saturnTerm" cx="38%" cy="30%" r="62%">
-          <stop offset="50%" stop-color="rgba(0,0,0,0)"/>
-          <stop offset="85%" stop-color="rgba(0,0,0,0.55)"/>
-          <stop offset="100%" stop-color="rgba(0,0,0,0.85)"/>
-        </radialGradient>
-        <linearGradient id="bandShade" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="rgba(20,12,4,0)"/>
-          <stop offset="50%" stop-color="rgba(20,12,4,0.18)"/>
-          <stop offset="100%" stop-color="rgba(20,12,4,0)"/>
-        </linearGradient>
-        <clipPath id="saturnPlanetClip">
-          <circle cx="300" cy="300" r="180"/>
-        </clipPath>
-        <!-- the lower-front half-disk of the planet at 18° tilt — for clipping front rings -->
-        <clipPath id="saturnFrontRingClip">
-          <path class="saturn-front-clip-shape" d="M 129 244 A 180 180 0 0 1 471 356 L 129 244 Z"/>
-        </clipPath>
-      </defs>
-
-      <g class="saturn-spinner">
-        <!-- soft atmospheric outer halo -->
-        <circle cx="300" cy="300" r="285" fill="url(#saturnHalo)" class="saturn-halo"/>
-
-        <!-- back rings (drawn before planet so the planet hides their back-crossing) -->
-        <g class="saturn-rings" transform="rotate(18 300 300)">
-          <ellipse cx="300" cy="300" rx="310" ry="63" fill="none" stroke="rgba(160,140,110,0.3)" stroke-width="2"/>
-          <ellipse cx="300" cy="300" rx="285" ry="58" fill="none" stroke="rgba(225,205,170,0.78)" stroke-width="6"/>
-          <ellipse cx="300" cy="300" rx="255" ry="51" fill="none" stroke="rgba(60,48,35,0.6)" stroke-width="3"/>
-          <ellipse cx="300" cy="300" rx="232" ry="46" fill="none" stroke="rgba(205,185,150,0.85)" stroke-width="5"/>
-          <ellipse cx="300" cy="300" rx="212" ry="42" fill="none" stroke="rgba(80,65,48,0.55)" stroke-width="2"/>
-          <ellipse cx="300" cy="300" rx="200" ry="40" fill="none" stroke="rgba(170,150,120,0.4)" stroke-width="1.5"/>
-        </g>
-
-        <!-- planet body -->
-        <circle cx="300" cy="300" r="180" fill="url(#saturnBody)"/>
-
-        <!-- atmospheric storm bands (subtle horizontal stripes clipped to planet) -->
-        <g clip-path="url(#saturnPlanetClip)" opacity="0.65">
-          <ellipse cx="300" cy="252" rx="170" ry="3" fill="rgba(60,45,28,0.5)"/>
-          <ellipse cx="300" cy="278" rx="175" ry="5" fill="rgba(35,25,15,0.55)"/>
-          <ellipse cx="300" cy="308" rx="178" ry="4" fill="rgba(55,40,25,0.5)"/>
-          <ellipse cx="300" cy="334" rx="175" ry="6" fill="rgba(30,22,12,0.55)"/>
-          <ellipse cx="300" cy="362" rx="168" ry="4" fill="rgba(60,45,28,0.45)"/>
-          <ellipse cx="300" cy="388" rx="150" ry="3" fill="rgba(40,28,18,0.4)"/>
-          <rect x="120" y="240" width="360" height="170" fill="url(#bandShade)"/>
-        </g>
-
-        <!-- terminator shadow (cold dark side) -->
-        <circle cx="300" cy="300" r="180" fill="url(#saturnTerm)"/>
-
-        <!-- front rings: SAME ellipses as the back, clipped to the lower-front half-disk of the planet so they seamlessly continue from the back rings -->
-        <g clip-path="url(#saturnFrontRingClip)">
-          <g transform="rotate(18 300 300)">
-            <ellipse cx="300" cy="300" rx="310" ry="63" fill="none" stroke="rgba(160,140,110,0.3)" stroke-width="2"/>
-            <ellipse cx="300" cy="300" rx="285" ry="58" fill="none" stroke="rgba(225,205,170,0.78)" stroke-width="6"/>
-            <ellipse cx="300" cy="300" rx="255" ry="51" fill="none" stroke="rgba(60,48,35,0.6)" stroke-width="3"/>
-            <ellipse cx="300" cy="300" rx="232" ry="46" fill="none" stroke="rgba(205,185,150,0.85)" stroke-width="5"/>
-            <ellipse cx="300" cy="300" rx="212" ry="42" fill="none" stroke="rgba(80,65,48,0.55)" stroke-width="2"/>
-            <ellipse cx="300" cy="300" rx="200" ry="40" fill="none" stroke="rgba(170,150,120,0.4)" stroke-width="1.5"/>
-          </g>
-        </g>
-      </g>
-    </svg>
   </div>
   <div class="blood-moon" aria-hidden="true"></div>
   <div class="stars" id="stars" aria-hidden="true"></div>
