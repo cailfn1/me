@@ -1199,26 +1199,23 @@ function initPetals() {
   setTimeout(gust, 18000);
 
   // branch click: petal explosion + shake
-  ['tree-branch', 'tree-branch-bl'].forEach(cls => {
-    document.querySelectorAll('.' + cls).forEach(branch => {
-      branch.addEventListener('click', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        branch.classList.remove('shake');
-        void branch.offsetWidth; // restart animation
-        branch.classList.add('shake');
-        // burst 12-16 petals from the branch area
-        const rect = branch.getBoundingClientRect();
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        for (let i = 0; i < 14; i++) {
-          setTimeout(() => {
-            const px = ((rect.left + Math.random() * rect.width) / vw) * 100;
-            const py = ((rect.top  + Math.random() * rect.height * 0.6) / vh) * 100;
-            spawnPetalAt(px, py, { drift: (Math.random() - 0.5) * 400, dur: 9 + Math.random() * 5, size: 12 + Math.random() * 8 });
-          }, i * 60);
-        }
-      });
+  document.querySelectorAll('.tree-branch').forEach(branch => {
+    branch.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      branch.classList.remove('shake');
+      void branch.offsetWidth; // restart animation
+      branch.classList.add('shake');
+      const rect = branch.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      for (let i = 0; i < 14; i++) {
+        setTimeout(() => {
+          const px = ((rect.left + Math.random() * rect.width) / vw) * 100;
+          const py = ((rect.top  + Math.random() * rect.height * 0.6) / vh) * 100;
+          spawnPetalAt(px, py, { drift: (Math.random() - 0.5) * 400, dur: 9 + Math.random() * 5, size: 12 + Math.random() * 8 });
+        }, i * 60);
+      }
     });
   });
 
@@ -1754,23 +1751,14 @@ function initCursor() {
     setTimeout(() => t.remove(), 900);
   }
 
-  function spawnHeartBurst(x, y) {
-    const count = 5;
-    for (let i = 0; i < count; i++) {
-      const h = document.createElement('div');
-      h.className = 'heart-burst';
-      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
-      const distance = 40 + Math.random() * 40;
-      const tx = Math.cos(angle) * distance;
-      const ty = Math.sin(angle) * distance;
-      h.style.left = x + 'px';
-      h.style.top = y + 'px';
-      h.style.setProperty('--tx', tx + 'px');
-      h.style.setProperty('--ty', ty + 'px');
-      h.style.setProperty('--rot', (Math.random() * 60 - 30) + 'deg');
-      document.body.appendChild(h);
-      setTimeout(() => h.remove(), 750);
-    }
+  // cold expanding ring ripple on click — single clean element, no warm particles
+  function spawnClickRipple(x, y) {
+    const r = document.createElement('div');
+    r.className = 'click-ripple';
+    r.style.left = x + 'px';
+    r.style.top = y + 'px';
+    document.body.appendChild(r);
+    setTimeout(() => r.remove(), 600);
   }
 
   window.addEventListener('mousemove', (e) => {
@@ -1785,7 +1773,7 @@ function initCursor() {
     if (e.button !== 0) return; // only left clicks
     const tag = e.target.tagName;
     if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
-      spawnHeartBurst(e.clientX, e.clientY);
+      spawnClickRipple(e.clientX, e.clientY);
     }
   }, { passive: true });
 }
