@@ -3,11 +3,26 @@ const $$ = (sel) => document.querySelectorAll(sel);
 const pad = (n, size = 2) => n.toString().padStart(size, '0');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+const BOOT_MANTRAS = [
+  'opening the door',
+  'writing your name',
+  'counting petals',
+  'summoning the dusk',
+  'waking the cat',
+  'lighting the moon',
+];
+
 function runBoot() {
   const bootEl = $('#boot');
   const status = $('#bootStatus');
   const isFirstVisit = sessionStorage.getItem('cails-bio:booted') !== '1';
   const minWait = isFirstVisit ? 2200 : 900;
+
+  // pick a random gothic mantra for this load
+  if (status) {
+    const mantra = BOOT_MANTRAS[Math.floor(Math.random() * BOOT_MANTRAS.length)];
+    status.innerHTML = mantra + '<span class="boot-dots"></span>';
+  }
 
   return new Promise((resolve) => {
     if (reducedMotion) {
@@ -1500,6 +1515,23 @@ function initFeathers() {
   setTimeout(loop, 5000);
 }
 
+// each .row section gently lifts + fades in as it enters the viewport
+function initScrollReveal() {
+  if (reducedMotion) return;
+  const rows = document.querySelectorAll('.row');
+  if (!rows.length || !('IntersectionObserver' in window)) return;
+  rows.forEach(r => r.classList.add('reveal-pending'));
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('reveal-in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+  rows.forEach(r => io.observe(r));
+}
+
 function initParallax() {
   const stars  = $('#stars');
   const fog    = document.querySelector('.fog');
@@ -2126,6 +2158,7 @@ runBoot().then(() => {
   initCrow();
   initThunder();
   initCmdK();
+  initScrollReveal();
   initParallax();
   initConstellation();
   initComets();

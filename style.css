@@ -4,6 +4,54 @@
   padding: 0;
 }
 
+/* ===== text selection (gothic crimson highlight) ===== */
+::selection { background: rgba(180, 30, 70, 0.4); color: #ffe6ed; text-shadow: none; }
+::-moz-selection { background: rgba(180, 30, 70, 0.4); color: #ffe6ed; }
+
+/* ===== global gothic scrollbar ===== */
+html { scrollbar-color: rgba(180, 30, 70, 0.45) transparent; scrollbar-width: thin; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgba(8, 4, 12, 0.4); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(180, 30, 70, 0.55), rgba(120, 10, 40, 0.7));
+  border-radius: 999px;
+  border: 1px solid rgba(255, 138, 171, 0.18);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(200, 40, 90, 0.75), rgba(140, 14, 50, 0.85));
+}
+
+/* ===== scroll reveal (each row fades up as it enters viewport) ===== */
+.row.reveal-pending {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+.row.reveal-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== respect prefers-reduced-motion globally ===== */
+@media (prefers-reduced-motion: reduce) {
+  .saturn .saturn-spinner,
+  .saturn .saturn-front-clip-shape,
+  .saturn .saturn-halo,
+  .saturn,
+  .blood-moon,
+  .ground-fog,
+  .fog-wisp,
+  .tree-branch,
+  .stars .star,
+  .activity-row.spotify .activity-art,
+  .music-eq.fake span,
+  .activity-eq span {
+    animation: none !important;
+  }
+  .thunder-flash.active, .lightning.active { animation-duration: 200ms !important; }
+  .row.reveal-pending { opacity: 1; transform: none; }
+}
+
 :root {
   --bg: #0a0a0a;
   --card: rgba(13, 13, 17, 0.6);
