@@ -7,6 +7,11 @@ const NAME_MAX = 24;
 const TEXT_MAX = 200;
 const RATE_LIMIT_SEC = 60; // KV expirationTtl minimum is 60s
 
+// snake global leaderboard
+const LB_KEY = 'snake-scores';
+const LB_MAX = 25;       // how many we retain in KV
+const SCORE_CAP = 99999; // sanity clamp on submitted scores
+
 // light hate-only filter (swearing is fine, slurs are not)
 const BANNED = ['nigger', 'nigga', 'faggot', 'retard', 'kike', 'chink', 'spic', 'tranny'];
 
@@ -94,6 +99,35 @@ async function handleApi(request, env, url) {
     m.likes = (m.likes || 0) + 1;
     await putMessages(env, msgs);
     return json({ ok: true, likes: m.likes });
+  }
+
+  // GET /api/leaderboard → global snake high scores (top 10)
+  if (path === '/api/leaderboard' && request.method === 'GET') {
+    const raw = await env.GUESTBOOK.get(LB_KEY);
+    let scores = [];
+    try { scores = raw ? JSON.parse(raw) : []; } catch { scores = []; }
+    return json({ ok: true, scores: scores.slice(0, 10) });
+  }
+
+  // POST /api/leaderboard → submit a snake score { name, score }
+  if (path === '/api/leaderboard' && request.method === 'POST') {
+    let body;
+    try { body = await request.json(); } catch { return json({ ok: false, error: 'bad request' }, 400); }
+    let name = clean(body.name, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    name = name.slice(0, 3) || 'AAA';
+    let score = parseInt(body.score, 10);
+    if (!Number.isFinite(score) || score < 1) return json({ ok: false, error: 'invalid score' }, 400);
+    score = Math.min(score, SCORE_CAP);
+    const raw = await env.GUESTBOOK.get(LB_KEY);
+    let scores = [];
+    try { scores = raw ? JSON.parse(raw) : []; } catch { scores = []; }
+    const entry = { n: name, s: score, ts: Date.now() };
+    scores.push(entry);
+    scores.sort((a, b) => b.s - a.s || a.ts - b.ts);
+    scores = scores.slice(0, LB_MAX);
+    await env.GUESTBOOK.put(LB_KEY, JSON.stringify(scores));
+    const rank = scores.findIndex(x => x.ts === entry.ts && x.n === name && x.s === score);
+    return json({ ok: true, scores: scores.slice(0, 10), rank });
   }
 
   // POST /api/guestbook/reply → owner reply under a message (key = ADMIN_KEY secret)

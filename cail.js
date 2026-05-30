@@ -2096,48 +2096,61 @@ function initCursor() {
   }, { passive: true });
 }
 
-const LS_LEADERBOARD = 'cails-bio:snake-leaderboard';
+const LS_LEADERBOARD = 'cails-bio:snake-leaderboard'; // local fallback cache
+const LB_API = '/api/leaderboard';
 const SNAKE_GRID = 20;       // cells per side
 const SNAKE_TICK = 110;      // ms per move (lower = faster)
-const SNAKE_TICK_MIN = 60;   // floor for speed-up
+const SNAKE_TICK_MIN = 55;   // floor for speed-up
+const BONUS_TTL = 60;        // ticks a golden apple stays on board
+const BONUS_CHANCE = 0.012;  // per-tick chance to spawn a golden apple
+const BONUS_POINTS = 5;
+const COMBO_WINDOW = 2600;   // ms within which consecutive eats keep the combo
 
 const snakeState = {
   running: false,
+  paused: false,
   loop: null,
+  raf: null,
   tick: SNAKE_TICK,
   dir: { x: 1, y: 0 },
   nextDir: { x: 1, y: 0 },
   snake: [],
   food: { x: 10, y: 10 },
+  bonus: null,          // { x, y, ttl }
+  particles: [],        // { x, y, vx, vy, life, max, color, size }
+  combo: 1,
+  lastEat: 0,
   score: 0,
+  level: 1,
   cell: 20,
+  shake: 0,
+  pulse: 0,
   ctx: null,
 };
 
-function loadLeaderboard() {
+// local cache (offline fallback for the global board)
+function loadLeaderboardLocal() {
   try {
     const raw = JSON.parse(localStorage.getItem(LS_LEADERBOARD) || '[]');
     return Array.isArray(raw) ? raw : [];
   } catch { return []; }
 }
-
-function saveLeaderboard(list) {
-  localStorage.setItem(LS_LEADERBOARD, JSON.stringify(list.slice(0, 5)));
+function saveLeaderboardLocal(list) {
+  try { localStorage.setItem(LS_LEADERBOARD, JSON.stringify(list.slice(0, 10))); } catch {}
 }
 
-function renderLeaderboard(highlightIdx = -1) {
+function renderLeaderboard(entries, highlightIdx = -1) {
   const list = $('#lbList');
   if (!list) return;
-  const entries = loadLeaderboard();
   list.innerHTML = '';
-  if (entries.length === 0) {
+  if (!entries || entries.length === 0) {
     const li = document.createElement('li');
     li.className = 'lb-empty';
     li.textContent = 'no scores yet — be the first.';
     list.appendChild(li);
     return;
   }
-  entries.forEach((e, i) => {
+  entries.slice(0, 10).forEach((e, i) => {
     const li = document.createElement('li');
     if (i === highlightIdx) li.classList.add('you');
     li.innerHTML = `<span class="lb-name">${escapeHtml(e.n)}</span><span class="lb-score">${e.s}</span>`;
@@ -2145,92 +2158,313 @@ function renderLeaderboard(highlightIdx = -1) {
   });
 }
 
-function addScore(name, score) {
-  const entries = loadLeaderboard();
-  entries.push({ n: name.toUpperCase().slice(0, 3) || '???', s: score });
-  entries.sort((a, b) => b.s - a.s);
-  const trimmed = entries.slice(0, 5);
-  saveLeaderboard(trimmed);
-  const idx = trimmed.findIndex(e => e.n === name.toUpperCase().slice(0, 3) && e.s === score);
-  renderLeaderboard(idx);
+// pull the global board; fall back to the local cache if offline
+async function fetchLeaderboard() {
+  try {
+    const res = await fetch(LB_API, { cache: 'no-store' });
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.scores)) {
+      saveLeaderboardLocal(data.scores);
+      renderLeaderboard(data.scores);
+      return data.scores;
+    }
+  } catch {}
+  renderLeaderboard(loadLeaderboardLocal());
+  return null;
 }
 
-function snakeRandomFood() {
-  const taken = new Set(snakeState.snake.map(s => `${s.x},${s.y}`));
+// submit a score to the global board; highlight your row on return
+async function submitScore(name, score) {
+  const clean3 = (name || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'AAA';
+  try {
+    const res = await fetch(LB_API, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: clean3, score }),
+    });
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.scores)) {
+      saveLeaderboardLocal(data.scores);
+      renderLeaderboard(data.scores, typeof data.rank === 'number' ? data.rank : -1);
+      return;
+    }
+  } catch {}
+  // offline fallback: update local cache only
+  const entries = loadLeaderboardLocal();
+  entries.push({ n: clean3, s: score });
+  entries.sort((a, b) => b.s - a.s);
+  const trimmed = entries.slice(0, 10);
+  saveLeaderboardLocal(trimmed);
+  renderLeaderboard(trimmed, trimmed.findIndex(e => e.n === clean3 && e.s === score));
+}
+
+function snakeFreeCell() {
+  const s = snakeState;
+  const taken = new Set(s.snake.map(p => `${p.x},${p.y}`));
+  if (s.food) taken.add(`${s.food.x},${s.food.y}`);
+  if (s.bonus) taken.add(`${s.bonus.x},${s.bonus.y}`);
   let x, y, tries = 0;
   do {
     x = Math.floor(Math.random() * SNAKE_GRID);
     y = Math.floor(Math.random() * SNAKE_GRID);
     tries++;
-  } while (taken.has(`${x},${y}`) && tries < 200);
-  snakeState.food = { x, y };
+  } while (taken.has(`${x},${y}`) && tries < 300);
+  return { x, y };
+}
+
+function snakeRandomFood() {
+  snakeState.food = snakeFreeCell();
+}
+
+function spawnBonus() {
+  const cell = snakeFreeCell();
+  snakeState.bonus = { x: cell.x, y: cell.y, ttl: BONUS_TTL };
+}
+
+// burst of particles at a grid cell (canvas-space)
+function snakeBurst(gx, gy, color, n = 14) {
+  const s = snakeState;
+  const cx = gx * s.cell + s.cell / 2;
+  const cy = gy * s.cell + s.cell / 2;
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 0.6 + Math.random() * 2.6;
+    const max = 18 + Math.random() * 16;
+    s.particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp,
+      life: max, max,
+      color,
+      size: 1.5 + Math.random() * 2.5,
+    });
+  }
+}
+
+// rounded-rect helper
+function roundRectPath(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 
 function snakeDraw() {
-  const { ctx, cell, snake, food } = snakeState;
+  const s = snakeState;
+  const { ctx, cell, snake, food, bonus } = s;
   if (!ctx) return;
   const w = SNAKE_GRID * cell;
+
+  ctx.save();
+  // screen shake (decays in the render loop)
+  if (s.shake > 0.2) {
+    const sx = (Math.random() - 0.5) * s.shake;
+    const sy = (Math.random() - 0.5) * s.shake;
+    ctx.translate(sx, sy);
+  }
+
   // bg
-  ctx.fillStyle = '#07070a';
-  ctx.fillRect(0, 0, w, w);
-  // subtle grid
-  ctx.strokeStyle = 'rgba(114, 137, 218, 0.04)';
+  ctx.fillStyle = '#0a0509';
+  ctx.fillRect(-8, -8, w + 16, w + 16);
+  // faint crimson grid
+  ctx.strokeStyle = 'rgba(180, 30, 70, 0.05)';
   ctx.lineWidth = 1;
   for (let i = 1; i < SNAKE_GRID; i++) {
     ctx.beginPath(); ctx.moveTo(i * cell, 0); ctx.lineTo(i * cell, w); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, i * cell); ctx.lineTo(w, i * cell); ctx.stroke();
   }
-  // food (glowing dot)
-  ctx.fillStyle = '#e84a4a';
-  ctx.shadowColor = '#e84a4a';
-  ctx.shadowBlur = 12;
-  ctx.fillRect(food.x * cell + 3, food.y * cell + 3, cell - 6, cell - 6);
-  ctx.shadowBlur = 0;
-  // snake
+
+  // pulse factor (0..1) shared by food + bonus
+  const pulse = 0.5 + 0.5 * Math.sin(s.pulse);
+
+  // food — pulsing crimson glow dot
+  {
+    const pad = 3 - pulse * 1.2;
+    ctx.fillStyle = '#ff5878';
+    ctx.shadowColor = '#ff2d5e';
+    ctx.shadowBlur = 10 + pulse * 10;
+    roundRectPath(ctx, food.x * cell + pad, food.y * cell + pad, cell - pad * 2, cell - pad * 2, 4);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  // bonus — golden apple with a TTL ring
+  if (bonus) {
+    const bx = bonus.x * cell + cell / 2;
+    const by = bonus.y * cell + cell / 2;
+    const rad = cell / 2 - 2;
+    // ttl ring
+    const frac = Math.max(0, bonus.ttl / BONUS_TTL);
+    ctx.strokeStyle = 'rgba(255, 210, 120, 0.55)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(bx, by, rad + 2, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+    ctx.stroke();
+    // apple
+    ctx.fillStyle = '#ffd166';
+    ctx.shadowColor = '#ffb300';
+    ctx.shadowBlur = 12 + pulse * 12;
+    ctx.beginPath();
+    ctx.arc(bx, by, rad - 1.5 + pulse * 1.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  // snake — head bright frost-pink → body gradient to deep crimson
+  const n = snake.length;
   snake.forEach((seg, i) => {
     const isHead = i === 0;
-    ctx.fillStyle = isHead ? '#8ea1e1' : '#7289da';
+    const t = n <= 1 ? 0 : i / n; // 0 head → ~1 tail
     if (isHead) {
-      ctx.shadowColor = '#7289da';
+      ctx.fillStyle = '#ffd9e3';
+      ctx.shadowColor = '#ff5878';
       ctx.shadowBlur = 14;
+    } else {
+      // lerp #c8285a (near head) → #6a0e2a (tail)
+      const r = Math.round(200 - 110 * t);
+      const g = Math.round(40 - 26 * t);
+      const b = Math.round(90 - 48 * t);
+      ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+      ctx.shadowBlur = 0;
     }
-    ctx.fillRect(seg.x * cell + 1, seg.y * cell + 1, cell - 2, cell - 2);
+    const pad = isHead ? 1 : 1.5;
+    roundRectPath(ctx, seg.x * cell + pad, seg.y * cell + pad, cell - pad * 2, cell - pad * 2, isHead ? 5 : 3);
+    ctx.fill();
     ctx.shadowBlur = 0;
+
+    // tiny eyes on the head, facing travel direction
+    if (isHead) {
+      ctx.fillStyle = '#3a0512';
+      const ex = seg.x * cell + cell / 2;
+      const ey = seg.y * cell + cell / 2;
+      const dx = s.dir.x, dy = s.dir.y;
+      const off = cell * 0.18;
+      const perp = cell * 0.18;
+      ctx.beginPath();
+      ctx.arc(ex + dx * off - dy * perp, ey + dy * off - dx * perp, 1.6, 0, Math.PI * 2);
+      ctx.arc(ex + dx * off + dy * perp, ey + dy * off + dx * perp, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
   });
+
+  // particles (canvas-space, smooth via rAF)
+  for (const p of s.particles) {
+    const a = Math.max(0, p.life / p.max);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+}
+
+// rAF render loop — smooth pulse + particles even though the snake is grid-snapped
+function snakeRenderLoop() {
+  const s = snakeState;
+  s.pulse += 0.12;
+  if (s.shake > 0) s.shake *= 0.86;
+  // advance particles
+  for (const p of s.particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vx *= 0.92;
+    p.vy *= 0.92;
+    p.life -= 1;
+  }
+  s.particles = s.particles.filter(p => p.life > 0);
+  snakeDraw();
+  // keep looping while game is open (running, paused, or particles settling)
+  s.raf = requestAnimationFrame(snakeRenderLoop);
+}
+
+function startRenderLoop() {
+  if (snakeState.raf == null) snakeState.raf = requestAnimationFrame(snakeRenderLoop);
+}
+function stopRenderLoop() {
+  if (snakeState.raf != null) { cancelAnimationFrame(snakeState.raf); snakeState.raf = null; }
+}
+
+function snakeUpdateHud() {
+  const s = snakeState;
+  const sc = $('#snakeScore'); if (sc) sc.textContent = s.score;
+  const lv = $('#snakeLevel'); if (lv) lv.textContent = 'lvl ' + s.level;
+  const cb = $('#snakeCombo');
+  if (cb) {
+    if (s.combo > 1) {
+      cb.textContent = '×' + s.combo;
+      cb.hidden = false;
+      cb.classList.remove('pop'); void cb.offsetWidth; cb.classList.add('pop');
+    } else {
+      cb.hidden = true;
+    }
+  }
+}
+
+function snakeSpeedUp() {
+  const s = snakeState;
+  if (s.tick > SNAKE_TICK_MIN) {
+    s.tick = Math.max(SNAKE_TICK_MIN, s.tick - 5);
+    clearInterval(s.loop);
+    s.loop = setInterval(snakeStep, s.tick);
+  }
+  s.level = Math.max(1, Math.round((SNAKE_TICK - s.tick) / 5) + 1);
 }
 
 function snakeStep() {
   const s = snakeState;
+  if (s.paused) return;
   s.dir = s.nextDir;
   const head = { x: s.snake[0].x + s.dir.x, y: s.snake[0].y + s.dir.y };
 
-  // wall collision
-  if (head.x < 0 || head.x >= SNAKE_GRID || head.y < 0 || head.y >= SNAKE_GRID) {
-    snakeGameOver();
-    return;
-  }
-  // self collision
-  if (s.snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+  // wall / self collision
+  if (head.x < 0 || head.x >= SNAKE_GRID || head.y < 0 || head.y >= SNAKE_GRID ||
+      s.snake.some(seg => seg.x === head.x && seg.y === head.y)) {
     snakeGameOver();
     return;
   }
   s.snake.unshift(head);
 
-  if (head.x === s.food.x && head.y === s.food.y) {
-    s.score++;
-    $('#snakeScore').textContent = s.score;
-    beep(660 + s.score * 12, 0.05, 'square', 0.05);
-    snakeRandomFood();
-    // speed up slightly every 3 foods
-    if (s.score % 3 === 0 && s.tick > SNAKE_TICK_MIN) {
-      s.tick = Math.max(SNAKE_TICK_MIN, s.tick - 6);
-      clearInterval(s.loop);
-      s.loop = setInterval(snakeStep, s.tick);
-    }
-  } else {
-    s.snake.pop();
+  // bonus lifetime + occasional spawn
+  if (s.bonus) { s.bonus.ttl--; if (s.bonus.ttl <= 0) s.bonus = null; }
+  else if (s.score >= 3 && Math.random() < BONUS_CHANCE) spawnBonus();
+
+  let ate = false;
+
+  // golden apple
+  if (s.bonus && head.x === s.bonus.x && head.y === s.bonus.y) {
+    const now = performance.now();
+    s.combo = (now - s.lastEat <= COMBO_WINDOW) ? s.combo + 1 : 1;
+    s.lastEat = now;
+    s.score += BONUS_POINTS * s.combo;
+    snakeBurst(s.bonus.x, s.bonus.y, '#ffd166', 22);
+    beep(1040, 0.08, 'square', 0.06);
+    s.bonus = null;
+    ate = true;
   }
-  snakeDraw();
+
+  // normal food
+  if (head.x === s.food.x && head.y === s.food.y) {
+    const now = performance.now();
+    s.combo = (now - s.lastEat <= COMBO_WINDOW) ? s.combo + 1 : 1;
+    s.lastEat = now;
+    s.score += s.combo;
+    snakeBurst(s.food.x, s.food.y, '#ff5878', 14);
+    beep(660 + Math.min(s.score, 40) * 10, 0.05, 'square', 0.05);
+    snakeRandomFood();
+    snakeSpeedUp();
+    ate = true;
+  }
+
+  if (!ate) s.snake.pop(); // grew this tick if we ate either item
+
+  snakeUpdateHud();
 }
 
 function snakeStart() {
@@ -2244,19 +2478,29 @@ function snakeStart() {
   s.nextDir = { x: 1, y: 0 };
   s.score = 0;
   s.tick = SNAKE_TICK;
-  $('#snakeScore').textContent = '0';
+  s.bonus = null;
+  s.particles = [];
+  s.combo = 1;
+  s.level = 1;
+  s.lastEat = 0;
+  s.shake = 0;
+  s.paused = false;
   snakeRandomFood();
-  snakeDraw();
+  snakeUpdateHud();
   s.running = true;
   $('#gameOverlay').hidden = true;
   clearInterval(s.loop);
   s.loop = setInterval(snakeStep, s.tick);
+  startRenderLoop();
 }
 
 function snakeGameOver() {
   const s = snakeState;
   s.running = false;
   clearInterval(s.loop);
+  s.shake = 16; // kick the screen-shake (decays in the render loop)
+  // death burst at the head
+  if (s.snake[0]) snakeBurst(s.snake[0].x, s.snake[0].y, '#ff5878', 24);
   beep(180, 0.25, 'sawtooth', 0.06);
   setTimeout(() => beep(120, 0.4, 'sawtooth', 0.05), 120);
 
@@ -2267,11 +2511,9 @@ function snakeGameOver() {
   const startBtn = $('#gameStart');
 
   title.textContent = `game over — ${s.score}`;
-  const top = loadLeaderboard();
-  const qualifies = top.length < 5 || s.score > (top[top.length - 1]?.s ?? 0);
 
-  if (s.score > 0 && qualifies) {
-    sub.textContent = 'new high score! enter initials';
+  if (s.score > 0) {
+    sub.textContent = 'enter initials for the global board';
     initials.hidden = false;
     initials.value = '';
     startBtn.textContent = 'submit & play again';
@@ -2290,21 +2532,28 @@ function openGame() {
   g.hidden = false;
   const overlay = $('#gameOverlay');
   $('#gameOverlayTitle').textContent = 'ready?';
-  $('#gameOverlaySub').textContent = 'arrows or wasd to move · eat the red pixels';
+  $('#gameOverlaySub').textContent = 'arrows / wasd · gold apple = bonus · P to pause';
   $('#snakeInitials').hidden = true;
   $('#gameStart').textContent = 'start';
   overlay.hidden = false;
+  // reset HUD
+  snakeState.score = 0; snakeState.level = 1; snakeState.combo = 1;
+  snakeUpdateHud();
   // size the canvas based on layout (keeps it crisp on hi-dpi)
   const canvas = $('#snakeCanvas');
   snakeState.ctx = canvas.getContext('2d');
   snakeState.cell = canvas.width / SNAKE_GRID;
-  snakeDraw();
+  if (snakeState.snake.length === 0) snakeRandomFood();
+  startRenderLoop();
+  fetchLeaderboard(); // refresh the global board on open
 }
 
 function closeGame() {
   $('#game').hidden = true;
   clearInterval(snakeState.loop);
+  stopRenderLoop();
   snakeState.running = false;
+  snakeState.paused = false;
 }
 
 function initSnake() {
@@ -2318,7 +2567,7 @@ function initSnake() {
 
   startBtn.addEventListener('click', () => {
     if (!initials.hidden && initials.value.trim()) {
-      addScore(initials.value.trim(), snakeState.score);
+      submitScore(initials.value.trim(), snakeState.score);
     }
     snakeStart();
   });
@@ -2343,6 +2592,25 @@ function initSnake() {
 
     if (e.key === 'Escape') {
       closeGame();
+      return;
+    }
+
+    // pause / resume with P (only mid-run)
+    if ((e.key === 'p' || e.key === 'P') && snakeState.running && e.target !== initials) {
+      e.preventDefault();
+      snakeState.paused = !snakeState.paused;
+      const sub = $('#gameOverlaySub');
+      const overlay = $('#gameOverlay');
+      if (snakeState.paused) {
+        $('#gameOverlayTitle').textContent = 'paused';
+        sub.textContent = 'press P to resume';
+        $('#snakeInitials').hidden = true;
+        $('#gameStart').hidden = true;
+        overlay.hidden = false;
+      } else {
+        overlay.hidden = true;
+        $('#gameStart').hidden = false;
+      }
       return;
     }
 
@@ -2375,7 +2643,7 @@ function initSnake() {
     if (e.target.id === 'game') closeGame();
   });
 
-  renderLeaderboard();
+  fetchLeaderboard();
 }
 
 // kick off ambient particles ASAP — aurora is pure CSS, no JS needed
