@@ -2432,9 +2432,11 @@ function snakeStep() {
   s.dir = s.nextDir;
   const head = { x: s.snake[0].x + s.dir.x, y: s.snake[0].y + s.dir.y };
 
-  // wall / self collision
-  if (head.x < 0 || head.x >= SNAKE_GRID || head.y < 0 || head.y >= SNAKE_GRID ||
-      s.snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+  // wall / self collision — exclude the tail cell (it vacates this tick, so the
+  // head may legally follow directly behind it)
+  const body = s.snake;
+  const hitsSelf = body.some((seg, i) => i !== body.length - 1 && seg.x === head.x && seg.y === head.y);
+  if (head.x < 0 || head.x >= SNAKE_GRID || head.y < 0 || head.y >= SNAKE_GRID || hitsSelf) {
     snakeGameOver();
     return;
   }
@@ -2513,27 +2515,32 @@ function snakeGameOver() {
   beep(180, 0.25, 'sawtooth', 0.06);
   setTimeout(() => beep(120, 0.4, 'sawtooth', 0.05), 120);
 
-  const overlay = $('#gameOverlay');
-  const title = $('#gameOverlayTitle');
-  const sub = $('#gameOverlaySub');
-  const initials = $('#snakeInitials');
-  const startBtn = $('#gameStart');
+  // let the shake + death particles play before the panel covers the board
+  setTimeout(() => {
+    if (s.running) return; // a new game already started during the delay
+    const overlay = $('#gameOverlay');
+    const title = $('#gameOverlayTitle');
+    const sub = $('#gameOverlaySub');
+    const initials = $('#snakeInitials');
+    const startBtn = $('#gameStart');
 
-  title.textContent = `game over — ${s.score}`;
+    title.textContent = `game over — ${s.score}`;
+    startBtn.hidden = false;
 
-  if (s.score > 0) {
-    sub.textContent = 'enter your name for the global board';
-    initials.hidden = false;
-    initials.value = '';
-    startBtn.textContent = 'submit & play again';
-    overlay.hidden = false;
-    setTimeout(() => initials.focus(), 50);
-  } else {
-    sub.textContent = 'press space or click to retry';
-    initials.hidden = true;
-    startBtn.textContent = 'play again';
-    overlay.hidden = false;
-  }
+    if (s.score > 0) {
+      sub.textContent = 'enter your name for the global board';
+      initials.hidden = false;
+      initials.value = '';
+      startBtn.textContent = 'submit & play again';
+      overlay.hidden = false;
+      setTimeout(() => initials.focus(), 50);
+    } else {
+      sub.textContent = 'press space or click to retry';
+      initials.hidden = true;
+      startBtn.textContent = 'play again';
+      overlay.hidden = false;
+    }
+  }, 480);
 }
 
 function openGame() {
@@ -2634,7 +2641,7 @@ function initSnake() {
     // ignore movement keys while typing initials
     if (e.target === initials) return;
 
-    if (!snakeState.running) return;
+    if (!snakeState.running || snakeState.paused) return;
     const d = snakeState.dir;
     let nd = null;
     if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') && d.y !== 1) nd = { x: 0, y: -1 };

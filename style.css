@@ -2043,6 +2043,7 @@ body.light-chaos {
   font-style: italic;
   font-size: 12px;
 }
+.lb-empty::before { content: none !important; }
 
 .game[hidden] { display: none !important; }
 
