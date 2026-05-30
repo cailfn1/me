@@ -3132,6 +3132,106 @@ body.light-chaos {
 }
 .anime-tag a:hover { color: #ffb4d2; border-bottom-color: rgba(255, 180, 210, 0.7); }
 
+/* ===== recent tracks (last.fm) ===== */
+.tracks-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 22px;
+  max-width: 820px;
+}
+@media (max-width: 720px) {
+  .tracks-list { grid-template-columns: 1fr; }
+}
+.tracks-loading {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 16px 0;
+  letter-spacing: 0.5px;
+}
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  min-width: 0;
+}
+.track-row:hover {
+  background: rgba(40, 14, 26, 0.4);
+  border-color: rgba(180, 30, 70, 0.25);
+  transform: translateX(2px);
+}
+.track-art {
+  width: 42px;
+  height: 42px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #1a1018;
+  border: 1px solid rgba(180, 30, 70, 0.25);
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.track-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.track-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.2px;
+}
+.track-artist {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.track-when {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: rgba(236, 232, 240, 0.4);
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: lowercase;
+}
+.track-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: #ff8aab;
+  text-transform: lowercase;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.track-now::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff5878;
+  box-shadow: 0 0 6px rgba(255, 88, 120, 0.85);
+  animation: trackPulse 1.4s ease-in-out infinite;
+}
+@keyframes trackPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.7); }
+}
+.track-row.playing {
+  background: rgba(40, 14, 26, 0.35);
+  border-color: rgba(180, 30, 70, 0.3);
+}
+
 .anime-stats {
   display: flex;
   flex-wrap: wrap;

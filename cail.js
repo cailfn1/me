@@ -663,6 +663,80 @@ async function initAniList() {
   }
 }
 
+// ===== last.fm recent tracks =====
+const LASTFM_USER = 'cailfn';
+const LASTFM_KEY = 'fb9a4ca51fab76634131f4db77e36fd8'; // read-only public key
+const LASTFM_COUNT = 8;
+
+function timeAgo(unixSec) {
+  const diff = Math.floor(Date.now() / 1000) - unixSec;
+  if (diff < 60) return 'just now';
+  const m = Math.floor(diff / 60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  const d = Math.floor(h / 24);
+  if (d < 7) return d + 'd ago';
+  const w = Math.floor(d / 7);
+  return w + 'w ago';
+}
+
+function renderTracks(tracks) {
+  const host = $('#tracksList');
+  if (!host) return;
+  if (!tracks || tracks.length === 0) {
+    host.innerHTML = '<div class="tracks-loading">nothing scrobbled yet</div>';
+    return;
+  }
+  host.innerHTML = tracks.map(t => {
+    const name = (t.name || 'unknown').replace(/[<>]/g, '');
+    const artist = (t.artist?.['#text'] || '').replace(/[<>]/g, '');
+    const url = t.url || '#';
+    const img = (t.image && t.image.find(i => i.size === 'large')?.['#text']) || '';
+    const nowPlaying = t['@attr']?.nowplaying === 'true';
+    const when = nowPlaying
+      ? '<span class="track-now">now playing</span>'
+      : `<span class="track-when">${t.date ? timeAgo(parseInt(t.date.uts, 10)) : ''}</span>`;
+    const art = img
+      ? `<img class="track-art" src="${img}" alt="" loading="lazy" />`
+      : `<div class="track-art"></div>`;
+    return `<a class="track-row${nowPlaying ? ' playing' : ''}" href="${url}" target="_blank" rel="noopener">
+      ${art}
+      <div class="track-meta">
+        <span class="track-name">${name}</span>
+        <span class="track-artist">${artist}</span>
+      </div>
+      ${when}
+    </a>`;
+  }).join('');
+}
+
+async function fetchTracks() {
+  const url = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${LASTFM_USER}&api_key=${LASTFM_KEY}&format=json&limit=${LASTFM_COUNT}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('lastfm ' + res.status);
+  const json = await res.json();
+  return json?.recenttracks?.track || [];
+}
+
+async function initLastfm() {
+  const host = $('#tracksList');
+  if (!host) return;
+  async function refresh() {
+    try {
+      const tracks = await fetchTracks();
+      renderTracks(tracks);
+    } catch (err) {
+      console.warn('lastfm failed:', err);
+      const section = $('#music');
+      if (section && !host.querySelector('.track-row')) section.style.display = 'none';
+    }
+  }
+  await refresh();
+  // refresh every 30s to keep "now playing" fresh
+  setInterval(refresh, 30000);
+}
+
 function initTerminal() {
   const input = $('#termInput');
   const closeBtn = $('#termClose');
@@ -2073,6 +2147,7 @@ runBoot().then(() => {
   initAvatarStreak();
   initLanyard();
   initAniList();
+  initLastfm();
   initTerminal();
   initGuestbook();
   initWebBtns();
