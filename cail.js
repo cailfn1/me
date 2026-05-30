@@ -423,6 +423,161 @@ function initAboutPursuits() {
   });
 }
 
+// ===== visitor geo + live weather + souls map (Cloudflare /api/visit) =====
+const VISIT_API = '/api/visit';
+const LS_SOUL = 'cails-bio:soul';
+const WX_GLYPH = { clear: '✦', clouds: '☁', rain: '🌧', storm: '⛈', snow: '❄', fog: '🌫' };
+
+function flagEmoji(cc) {
+  if (!cc || cc.length !== 2) return '';
+  const A = 0x1f1e6;
+  const u = cc.toUpperCase();
+  return String.fromCodePoint(A + u.charCodeAt(0) - 65) + String.fromCodePoint(A + u.charCodeAt(1) - 65);
+}
+
+// approximate centroids (lat, lon) for placing pins — common countries
+const COUNTRY_LATLON = {
+  US:[38,-97],CA:[56,-106],MX:[23,-102],BR:[-10,-55],AR:[-34,-64],CL:[-30,-71],CO:[4,-73],PE:[-10,-76],VE:[8,-66],
+  GB:[54,-2],IE:[53,-8],FR:[46,2],ES:[40,-4],PT:[39,-8],DE:[51,10],NL:[52,5],BE:[50,4],LU:[49,6],CH:[47,8],AT:[47,14],
+  IT:[42,12],GR:[39,22],PL:[52,19],CZ:[49,15],SK:[48,19],HU:[47,19],RO:[46,25],BG:[42,25],UA:[49,32],BY:[53,28],
+  SE:[62,15],NO:[62,10],FI:[64,26],DK:[56,9],IS:[65,-18],EE:[59,26],LV:[57,24],LT:[55,24],RU:[61,90],
+  TR:[39,35],IL:[31,35],SA:[24,45],AE:[24,54],QA:[25,51],IR:[32,53],IQ:[33,44],EG:[26,30],MA:[32,-6],DZ:[28,3],TN:[34,9],
+  ZA:[-29,24],NG:[10,8],KE:[0,38],GH:[8,-1],ET:[9,40],TZ:[-6,35],
+  IN:[22,79],PK:[30,70],BD:[24,90],LK:[7,81],NP:[28,84],
+  CN:[36,104],JP:[36,138],KR:[37,128],TW:[24,121],HK:[22,114],
+  TH:[15,101],VN:[16,108],PH:[13,122],ID:[-2,118],MY:[4,102],SG:[1,104],
+  AU:[-25,134],NZ:[-42,172],
+};
+
+let _rainRAF = null;
+let _precipCanvas = null;
+function startPrecip(kind, intensity = 1) {
+  if (reducedMotion || _rainRAF) return;
+  const c = document.createElement('canvas');
+  c.id = 'rain';
+  c.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(c);
+  _precipCanvas = c;
+  const ctx = c.getContext('2d');
+  let W, H;
+  const resize = () => { W = c.width = window.innerWidth; H = c.height = window.innerHeight; };
+  resize();
+  window.addEventListener('resize', resize);
+  const snow = kind === 'snow';
+  const count = Math.floor((snow ? 70 : 100) * intensity);
+  const drops = [];
+  for (let i = 0; i < count; i++) {
+    drops.push(snow
+      ? { x: Math.random() * W, y: Math.random() * H, r: 1 + Math.random() * 1.8, v: 0.5 + Math.random() * 1.1, sway: Math.random() * Math.PI * 2 }
+      : { x: Math.random() * W, y: Math.random() * H, l: 8 + Math.random() * 14, v: 6 + Math.random() * 6 });
+  }
+  const draw = () => {
+    ctx.clearRect(0, 0, W, H);
+    if (snow) {
+      ctx.fillStyle = 'rgba(226, 226, 236, 0.55)';
+      for (const d of drops) {
+        d.sway += 0.02; d.y += d.v; d.x += Math.sin(d.sway) * 0.5;
+        if (d.y > H) { d.y = -4; d.x = Math.random() * W; }
+        ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fill();
+      }
+    } else {
+      ctx.strokeStyle = 'rgba(198, 170, 192, 0.20)';
+      ctx.lineWidth = 1;
+      for (const d of drops) {
+        ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - 1.4, d.y + d.l); ctx.stroke();
+        d.y += d.v; d.x -= 0.5;
+        if (d.y > H) { d.y = -d.l; d.x = Math.random() * W; }
+      }
+    }
+    _rainRAF = requestAnimationFrame(draw);
+  };
+  draw();
+}
+
+function scheduleStorm() {
+  if (reducedMotion) return;
+  const fire = () => {
+    if (typeof triggerThunder === 'function') triggerThunder();
+    setTimeout(fire, 13000 + Math.random() * 20000);
+  };
+  setTimeout(fire, 4000 + Math.random() * 6000);
+}
+
+function applyGeoGreeting(d) {
+  if (!d.city) return;
+  const glyph = WX_GLYPH[d.weather] || '🌙';
+  let msg;
+  if (d.weather === 'rain') msg = `it's raining in ${d.city} right now ${glyph}`;
+  else if (d.weather === 'storm') msg = `storms over ${d.city} right now ${glyph}`;
+  else if (d.weather === 'snow') msg = `it's snowing in ${d.city} ${glyph}`;
+  else if (d.weather === 'fog') msg = `${d.city} is fogged in right now ${glyph}`;
+  else msg = `welcome, soul from ${d.city} ${glyph}`;
+  setTimeout(() => { if (typeof showToast === 'function') showToast(msg); }, 1500);
+}
+
+function applyWeather(d) {
+  const w = d.weather;
+  if (w === 'fog' || w === 'clouds') document.body.classList.add('wx-fog');
+  if (d.isDay === false) document.body.classList.add('night-mode');
+  if (reducedMotion) return;
+  if (w === 'rain') startPrecip('rain', 1);
+  else if (w === 'storm') { startPrecip('rain', 1.4); scheduleStorm(); }
+  else if (w === 'snow') startPrecip('snow', 1);
+}
+
+function renderSoulsMap(souls) {
+  if (!souls) return;
+  const cEl = document.getElementById('soulsCountries');
+  const tEl = document.getElementById('soulsTotal');
+  if (cEl) cEl.textContent = souls.countries;
+  if (tEl) tEl.textContent = (souls.total || 0).toLocaleString();
+  const map = document.getElementById('soulsMap');
+  if (!map) return;
+  map.querySelectorAll('.soul-pin').forEach(p => p.remove());
+  const by = souls.byCountry || {};
+  const counts = Object.values(by);
+  const max = counts.length ? Math.max(...counts) : 1;
+  for (const [cc, n] of Object.entries(by)) {
+    const ll = COUNTRY_LATLON[cc];
+    if (!ll) continue;
+    const [lat, lon] = ll;
+    const x = (lon + 180) / 360 * 100;
+    const y = (90 - lat) / 180 * 100;
+    const size = 5 + (n / max) * 9;
+    const pin = document.createElement('span');
+    pin.className = 'soul-pin';
+    pin.style.left = x + '%';
+    pin.style.top = y + '%';
+    pin.style.width = size + 'px';
+    pin.style.height = size + 'px';
+    pin.title = `${flagEmoji(cc)} ${cc} · ${n}`;
+    map.appendChild(pin);
+  }
+}
+
+async function initVisit() {
+  let isNew = false;
+  try { isNew = localStorage.getItem(LS_SOUL) !== '1'; } catch {}
+  // show whatever souls we already have right away
+  fetch('/api/souls', { cache: 'no-store' }).then(r => r.json()).then(j => {
+    if (j.ok) renderSoulsMap(j);
+  }).catch(() => {});
+  try {
+    const res = await fetch(VISIT_API, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ isNew }),
+    });
+    const data = await res.json();
+    if (!data.ok) return;
+    window.__visit = data;
+    if (isNew) { try { localStorage.setItem(LS_SOUL, '1'); } catch {} }
+    applyGeoGreeting(data);
+    applyWeather(data);
+    renderSoulsMap(data.souls);
+  } catch {}
+}
+
 function initLanyard() {
   const id = document.body.dataset.discordId;
   if (!id) { startAboutNowIdleRotation(); return; }
@@ -2759,6 +2914,7 @@ runBoot().then(() => {
   initKonami();
   initAvatarStreak();
   initLanyard();
+  initVisit();
   initAboutPursuits();
   // if Lanyard hasn't delivered a live status within 4s, start the idle rotation
   setTimeout(() => { if (!_aboutNowLive) startAboutNowIdleRotation(); }, 4000);

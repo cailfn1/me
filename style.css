@@ -306,6 +306,67 @@ body.night-mode .ground-fog {
 body.night-mode .fog {
   opacity: 0.75;
 }
+/* live weather: fog/clouds thicken the ambient fog */
+body.wx-fog .fog {
+  opacity: 0.92;
+  filter: blur(48px);
+}
+
+/* live weather precipitation canvas */
+#rain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* souls world map */
+.souls-line {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 14px;
+  letter-spacing: 0.2px;
+}
+.souls-num {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 16px;
+  color: #ff8aab;
+  text-shadow: 0 0 10px rgba(180, 30, 70, 0.4);
+  padding: 0 2px;
+}
+.souls-map {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  aspect-ratio: 2 / 1;
+  border: 1px solid rgba(180, 30, 70, 0.18);
+  border-radius: 10px;
+  background:
+    linear-gradient(rgba(180, 30, 70, 0.05) 1px, transparent 1px) 0 0 / 100% 16.66%,
+    linear-gradient(90deg, rgba(180, 30, 70, 0.05) 1px, transparent 1px) 0 0 / 8.33% 100%,
+    radial-gradient(ellipse at center, rgba(40, 14, 26, 0.5), rgba(10, 5, 9, 0.6));
+  overflow: hidden;
+}
+.soul-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff9ab8 0%, #c81e46 55%, rgba(180, 30, 70, 0) 100%);
+  box-shadow: 0 0 8px rgba(255, 90, 120, 0.8), 0 0 16px rgba(180, 30, 70, 0.5);
+  animation: soulPulse 2.6s ease-in-out infinite;
+  cursor: default;
+}
+@keyframes soulPulse {
+  0%, 100% { opacity: 0.95; }
+  50%      { opacity: 0.45; transform: translate(-50%, -50%) scale(0.82); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .soul-pin { animation: none; }
+}
+@media (max-width: 540px) {
+  .souls-map { max-width: 100%; }
+}
 body.night-mode .mascot-zzz span {
   animation-duration: 3.2s;
   opacity: 0.85;
