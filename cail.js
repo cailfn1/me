@@ -1743,13 +1743,15 @@ function initCursor() {
   function spawnTrail(x, y) {
     const t = document.createElement('div');
     t.className = 'cursor-trail';
-    const sway = (Math.random() - 0.5) * 6;
-    t.style.left = (x + sway) + 'px';
-    t.style.top  = (y + 6) + 'px'; // spawn just below the cursor tip
-    const scale = 0.75 + Math.random() * 0.4;
+    // tiny jitter so the trail isn't a perfectly rigid line
+    const jx = (Math.random() - 0.5) * 4;
+    const jy = (Math.random() - 0.5) * 4;
+    t.style.left = (x + jx) + 'px';
+    t.style.top  = (y + jy) + 'px';
+    const scale = 0.7 + Math.random() * 0.5;
     t.style.setProperty('--scale', scale);
     document.body.appendChild(t);
-    setTimeout(() => t.remove(), 1200);
+    setTimeout(() => t.remove(), 900);
   }
 
   function spawnHeartBurst(x, y) {
