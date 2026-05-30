@@ -904,7 +904,7 @@ function initGuestbook() {
         if ($('#gbCharCount')) $('#gbCharCount').textContent = '0/200';
         await loadGuestbook();
       } else if (typeof showToast === 'function') {
-        showToast(data.error || 'could not post');
+        showToast(data.error || 'could not post — try again');
       }
     } catch {
       if (typeof showToast === 'function') showToast('network error — try again');

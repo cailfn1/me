@@ -5,7 +5,7 @@ const MSG_KEY = 'messages';
 const MAX_MESSAGES = 300;
 const NAME_MAX = 24;
 const TEXT_MAX = 200;
-const RATE_LIMIT_SEC = 30;
+const RATE_LIMIT_SEC = 60; // KV expirationTtl minimum is 60s
 
 // light hate-only filter (swearing is fine, slurs are not)
 const BANNED = ['nigger', 'nigga', 'faggot', 'retard', 'kike', 'chink', 'spic', 'tranny'];
