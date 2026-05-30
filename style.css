@@ -2145,16 +2145,45 @@ body.light-chaos {
 }
 
 .gb-form input:focus {
-  border-color: var(--accent);
+  border-color: rgba(180, 30, 70, 0.5);
 }
 
 #gbName {
-  width: 100px;
+  width: 130px;
 }
 
 #gbMsg {
   flex: 1;
   min-width: 140px;
+}
+
+/* honeypot — visually gone, off-screen, but bots still fill it */
+.gb-honeypot {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.gb-charcount {
+  width: 100%;
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  color: rgba(236, 232, 240, 0.3);
+  letter-spacing: 0.05em;
+  margin-top: -2px;
+}
+
+.gb-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  color: rgba(255, 138, 171, 0.6);
+  text-transform: lowercase;
 }
 
 .gb-submit {
@@ -2188,28 +2217,76 @@ body.light-chaos {
 }
 
 .gb-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   padding: 9px 12px;
-  background: rgba(10, 10, 14, 0.45);
+  background: rgba(16, 10, 18, 0.5);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 6px;
+  border: 1px solid rgba(180, 30, 70, 0.12);
+  border-radius: 8px;
   font-size: 12.5px;
   color: var(--text);
   word-break: break-word;
+  transition: border-color 0.18s ease;
 }
+.gb-entry:hover { border-color: rgba(180, 30, 70, 0.28); }
+
+.gb-entry-main { flex: 1; min-width: 0; }
 
 .gb-entry .gb-author {
-  color: var(--accent);
+  color: #ff8aab;
   font-weight: 500;
-  margin-right: 6px;
+  margin-right: 7px;
+}
+
+.gb-entry .gb-text { color: rgba(236, 232, 240, 0.92); }
+
+.gb-entry-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .gb-entry .gb-time {
-  color: var(--muted);
-  font-size: 11px;
-  margin-left: 6px;
+  color: rgba(236, 232, 240, 0.35);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
+
+.gb-like {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(180, 30, 70, 0.1);
+  border: 1px solid rgba(180, 30, 70, 0.2);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: rgba(236, 232, 240, 0.5);
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+.gb-like:hover:not(.liked) {
+  border-color: rgba(255, 138, 171, 0.5);
+  color: #ff8aab;
+  transform: scale(1.05);
+}
+.gb-like .gb-like-heart { font-size: 9px; transition: transform 0.16s ease; }
+.gb-like:hover:not(.liked) .gb-like-heart { transform: scale(1.2); }
+.gb-like.liked {
+  background: rgba(180, 30, 70, 0.22);
+  border-color: rgba(255, 138, 171, 0.45);
+  color: #ff8aab;
+  cursor: default;
+}
+.gb-like.liked .gb-like-heart { color: #ff5878; text-shadow: 0 0 6px rgba(255, 88, 120, 0.7); }
 
 .gb-empty {
   color: var(--muted);

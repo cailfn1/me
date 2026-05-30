@@ -1,8 +1,13 @@
 {
   "name": "me",
   "compatibility_date": "2024-12-01",
+  "main": "worker.js",
   "assets": {
     "directory": "./",
+    "binding": "ASSETS",
     "not_found_handling": "404-page"
-  }
+  },
+  "kv_namespaces": [
+    { "binding": "GUESTBOOK", "id": "a844a1a139a344ba8e47df3e085da7d4" }
+  ]
 }

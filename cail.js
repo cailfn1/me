@@ -793,58 +793,135 @@ function initTerminal() {
 }
 
 // stored in localStorage by default (per-browser, not global).
-// GUESTBOOK BACKEND: to make it global, replace loadEntries/saveEntries
-// with calls to Firebase, Cusdis, or any JSON backend.
-const LS_GUESTBOOK = 'cails-bio:guestbook';
-const MAX_ENTRIES = 50;
+// GUESTBOOK — backed by the same-origin Cloudflare Worker (/api/guestbook) + KV
+const GB_API = '/api/guestbook';
+const GB_LIKED_KEY = 'cails-bio:gb-liked'; // soft client-side dedupe for likes
 
-function loadEntries() {
-  try {
-    return JSON.parse(localStorage.getItem(LS_GUESTBOOK) || '[]');
-  } catch {
-    return [];
-  }
+function gbLikedSet() {
+  try { return new Set(JSON.parse(localStorage.getItem(GB_LIKED_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function gbMarkLiked(id) {
+  const s = gbLikedSet();
+  s.add(id);
+  localStorage.setItem(GB_LIKED_KEY, JSON.stringify([...s]));
 }
 
-function saveEntries(entries) {
-  localStorage.setItem(LS_GUESTBOOK, JSON.stringify(entries.slice(-MAX_ENTRIES)));
-}
-
-function renderGuestbook() {
+function renderGuestbook(messages) {
   const list = $('#gbList');
-  const entries = loadEntries();
+  const countEl = $('#gbCount');
+  if (!list) return;
+  if (countEl) countEl.textContent = messages.length ? `${messages.length} message${messages.length === 1 ? '' : 's'}` : '';
   list.innerHTML = '';
-  if (entries.length === 0) {
+  if (!messages || messages.length === 0) {
     const li = document.createElement('li');
     li.className = 'gb-empty';
     li.textContent = 'no signatures yet — be the first.';
     list.appendChild(li);
     return;
   }
-  entries.slice().reverse().forEach(e => {
+  const liked = gbLikedSet();
+  messages.forEach(m => {
     const li = document.createElement('li');
     li.className = 'gb-entry';
-    const when = new Date(e.t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    li.innerHTML = `<span class="gb-author">${escapeHtml(e.n)}</span>${escapeHtml(e.m)}<span class="gb-time">${when}</span>`;
+    const when = m.ts ? timeAgo(Math.floor(m.ts / 1000)) : '';
+    const isLiked = liked.has(m.id);
+    li.innerHTML =
+      `<div class="gb-entry-main">` +
+        `<span class="gb-author">${escapeHtml(m.name)}</span>` +
+        `<span class="gb-text">${escapeHtml(m.text)}</span>` +
+      `</div>` +
+      `<div class="gb-entry-side">` +
+        `<button class="gb-like${isLiked ? ' liked' : ''}" data-id="${m.id}" aria-label="like" ${isLiked ? 'disabled' : ''}>` +
+          `<span class="gb-like-heart">♥</span><span class="gb-like-count">${m.likes || 0}</span>` +
+        `</button>` +
+        `<span class="gb-time">${when}</span>` +
+      `</div>`;
     list.appendChild(li);
   });
+
+  list.querySelectorAll('.gb-like:not(.liked)').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      if (gbLikedSet().has(id)) return;
+      btn.classList.add('liked');
+      btn.disabled = true;
+      const countSpan = btn.querySelector('.gb-like-count');
+      countSpan.textContent = (parseInt(countSpan.textContent, 10) || 0) + 1;
+      gbMarkLiked(id);
+      try {
+        const res = await fetch(GB_API + '/like', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+        const data = await res.json();
+        if (data.ok && typeof data.likes === 'number') countSpan.textContent = data.likes;
+      } catch {}
+    });
+  });
+}
+
+async function loadGuestbook() {
+  const list = $('#gbList');
+  if (!list) return;
+  try {
+    const res = await fetch(GB_API, { cache: 'no-store' });
+    const data = await res.json();
+    renderGuestbook(data.messages || []);
+  } catch {
+    list.innerHTML = '<li class="gb-empty">couldn\'t load the guestbook right now.</li>';
+  }
 }
 
 function initGuestbook() {
   const form = $('#gbForm');
   if (!form) return;
-  renderGuestbook();
-  form.addEventListener('submit', (e) => {
+  loadGuestbook();
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = $('#gbName').value.trim().slice(0, 20);
-    const msg = $('#gbMsg').value.trim().slice(0, 120);
-    if (!name || !msg) return;
-    const entries = loadEntries();
-    entries.push({ n: name, m: msg, t: Date.now() });
-    saveEntries(entries);
-    $('#gbMsg').value = '';
-    renderGuestbook();
+    const nameEl = $('#gbName');
+    const msgEl = $('#gbMsg');
+    const honeyEl = $('#gbWebsite');
+    const btn = form.querySelector('.gb-submit');
+    const name = nameEl.value.trim().slice(0, 24);
+    const message = msgEl.value.trim().slice(0, 200);
+    if (!message) return;
+
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'signing...';
+    try {
+      const res = await fetch(GB_API, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name, message, website: honeyEl ? honeyEl.value : '' }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        msgEl.value = '';
+        if ($('#gbCharCount')) $('#gbCharCount').textContent = '0/200';
+        await loadGuestbook();
+      } else if (typeof showToast === 'function') {
+        showToast(data.error || 'could not post');
+      }
+    } catch {
+      if (typeof showToast === 'function') showToast('network error — try again');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
   });
+
+  // live char counter
+  const msgEl = $('#gbMsg');
+  const charEl = $('#gbCharCount');
+  if (msgEl && charEl) {
+    msgEl.addEventListener('input', () => {
+      charEl.textContent = `${msgEl.value.length}/200`;
+    });
+  }
 }
 
 let audioCtx = null;
