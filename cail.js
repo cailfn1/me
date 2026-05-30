@@ -796,6 +796,30 @@ function initTerminal() {
 // GUESTBOOK — backed by the same-origin Cloudflare Worker (/api/guestbook) + KV
 const GB_API = '/api/guestbook';
 const GB_LIKED_KEY = 'cails-bio:gb-liked'; // soft client-side dedupe for likes
+const GB_ADMIN_LS = 'cails-bio:gb-admin'; // owner key (only cail ever sets this)
+
+function gbAdminKey() {
+  try { return localStorage.getItem(GB_ADMIN_LS) || ''; } catch { return ''; }
+}
+function gbIsOwner() {
+  return !!gbAdminKey();
+}
+function gbOwnerLogin() {
+  if (gbIsOwner()) {
+    if (confirm('sign out of owner mode?')) {
+      try { localStorage.removeItem(GB_ADMIN_LS); } catch {}
+      loadGuestbook();
+      if (typeof showToast === 'function') showToast('owner mode off');
+    }
+    return;
+  }
+  const k = prompt('admin key');
+  if (k && k.trim()) {
+    try { localStorage.setItem(GB_ADMIN_LS, k.trim()); } catch {}
+    loadGuestbook();
+    if (typeof showToast === 'function') showToast('owner mode on — reply buttons live');
+  }
+}
 
 function gbLikedSet() {
   try { return new Set(JSON.parse(localStorage.getItem(GB_LIKED_KEY) || '[]')); }
@@ -821,22 +845,42 @@ function renderGuestbook(messages) {
     return;
   }
   const liked = gbLikedSet();
+  const owner = gbIsOwner();
   messages.forEach(m => {
     const li = document.createElement('li');
     li.className = 'gb-entry';
     const when = m.ts ? timeAgo(Math.floor(m.ts / 1000)) : '';
     const isLiked = liked.has(m.id);
+    const replies = Array.isArray(m.replies) ? m.replies : [];
+    const repliesHtml = replies.map(r => {
+      const rwhen = r.ts ? timeAgo(Math.floor(r.ts / 1000)) : '';
+      const rdel = owner ? `<button class="gb-del" data-id="${m.id}" data-rid="${r.id}" aria-label="delete reply" title="delete reply">✕</button>` : '';
+      return `<div class="gb-reply">` +
+        `<span class="gb-reply-author">↳ cail</span>` +
+        `<span class="gb-reply-text">${escapeHtml(r.text)}</span>` +
+        `<span class="gb-reply-time">${rwhen}</span>` +
+        rdel +
+      `</div>`;
+    }).join('');
+    const ownerCtrls = owner
+      ? `<button class="gb-reply-btn" data-id="${m.id}">reply</button>` +
+        `<button class="gb-del" data-id="${m.id}" aria-label="delete message" title="delete message">✕</button>`
+      : '';
     li.innerHTML =
       `<div class="gb-entry-top">` +
         `<span class="gb-author">${escapeHtml(m.name)}</span>` +
         `<span class="gb-time">${when}</span>` +
+        ownerCtrls +
         `<button class="gb-like${isLiked ? ' liked' : ''}" data-id="${m.id}" aria-label="like" ${isLiked ? 'disabled' : ''}>` +
           `<span class="gb-like-heart">♥</span><span class="gb-like-count">${m.likes || 0}</span>` +
         `</button>` +
       `</div>` +
-      `<div class="gb-text">${escapeHtml(m.text)}</div>`;
+      `<div class="gb-text">${escapeHtml(m.text)}</div>` +
+      (repliesHtml ? `<div class="gb-replies">${repliesHtml}</div>` : '');
     list.appendChild(li);
   });
+
+  if (owner) wireOwnerControls(list);
 
   list.querySelectorAll('.gb-like:not(.liked)').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -856,6 +900,74 @@ function renderGuestbook(messages) {
         const data = await res.json();
         if (data.ok && typeof data.likes === 'number') countSpan.textContent = data.likes;
       } catch {}
+    });
+  });
+}
+
+function wireOwnerControls(list) {
+  // reply: reveal an inline box under the entry, post to /reply with the admin key
+  list.querySelectorAll('.gb-reply-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const entry = btn.closest('.gb-entry');
+      if (!entry || entry.querySelector('.gb-reply-form')) return;
+      const id = btn.dataset.id;
+      const form = document.createElement('form');
+      form.className = 'gb-reply-form';
+      form.innerHTML =
+        `<input type="text" maxlength="200" placeholder="reply as cail…" autocomplete="off" />` +
+        `<button type="submit">send</button>`;
+      entry.appendChild(form);
+      const input = form.querySelector('input');
+      input.focus();
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = input.value.trim().slice(0, 200);
+        if (!text) return;
+        const sendBtn = form.querySelector('button');
+        sendBtn.disabled = true;
+        try {
+          const res = await fetch(GB_API + '/reply', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ id, text, key: gbAdminKey() }),
+          });
+          if (res.status === 401) {
+            try { localStorage.removeItem(GB_ADMIN_LS); } catch {}
+            if (typeof showToast === 'function') showToast('wrong admin key — owner mode off');
+            loadGuestbook();
+            return;
+          }
+          const data = await res.json();
+          if (data.ok) { await loadGuestbook(); }
+          else if (typeof showToast === 'function') showToast(data.error || 'could not reply');
+        } catch {
+          if (typeof showToast === 'function') showToast('network error — try again');
+        } finally {
+          sendBtn.disabled = false;
+        }
+      });
+    });
+  });
+
+  // delete: message (id) or single reply (id + rid)
+  list.querySelectorAll('.gb-del').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const rid = btn.dataset.rid;
+      if (!confirm(rid ? 'delete this reply?' : 'delete this message?')) return;
+      try {
+        const url = GB_API + '?id=' + encodeURIComponent(id) +
+          (rid ? '&rid=' + encodeURIComponent(rid) : '') +
+          '&key=' + encodeURIComponent(gbAdminKey());
+        const res = await fetch(url, { method: 'DELETE' });
+        if (res.status === 401) {
+          try { localStorage.removeItem(GB_ADMIN_LS); } catch {}
+          if (typeof showToast === 'function') showToast('wrong admin key — owner mode off');
+        }
+        await loadGuestbook();
+      } catch {
+        if (typeof showToast === 'function') showToast('network error — try again');
+      }
     });
   });
 }
@@ -1457,6 +1569,7 @@ function initCmdK() {
     { icon: '↓', name: 'jump to arcade',          tag: 'nav',  run: () => location.hash = '#arcade' },
     { icon: '🎌', name: 'open anime.cail.love',   tag: 'link', run: () => window.open('https://anime.cail.love', '_blank', 'noopener') },
     { icon: '☆', name: 'open github',             tag: 'link', run: () => window.open('https://github.com/cailfn1', '_blank', 'noopener') },
+    { icon: '✎', name: 'owner mode — reply to guestbook', tag: 'owner', run: () => gbOwnerLogin() },
   ];
 
   let active = 0;

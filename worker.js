@@ -26,6 +26,10 @@ function hasBanned(text) {
   return BANNED.some(w => low.includes(w));
 }
 
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
 async function getMessages(env) {
   const raw = await env.GUESTBOOK.get(MSG_KEY);
   if (!raw) return [];
@@ -68,7 +72,7 @@ async function handleApi(request, env, url) {
 
     const msgs = await getMessages(env);
     const msg = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      id: genId(),
       name,
       text,
       ts: Date.now(),
@@ -92,13 +96,39 @@ async function handleApi(request, env, url) {
     return json({ ok: true, likes: m.likes });
   }
 
-  // DELETE /api/guestbook?id=..&key=.. → admin moderation (key = ADMIN_KEY secret)
+  // POST /api/guestbook/reply → owner reply under a message (key = ADMIN_KEY secret)
+  if (path === '/api/guestbook/reply' && request.method === 'POST') {
+    let body;
+    try { body = await request.json(); } catch { return json({ ok: false, error: 'bad request' }, 400); }
+    if (!env.ADMIN_KEY || body.key !== env.ADMIN_KEY) return json({ ok: false, error: 'unauthorized' }, 401);
+    const id = String(body.id || '');
+    const text = clean(body.text, TEXT_MAX);
+    if (!text) return json({ ok: false, error: 'reply required' }, 400);
+    if (hasBanned(text)) return json({ ok: false, error: 'be nice.' }, 400);
+    const msgs = await getMessages(env);
+    const m = msgs.find(x => x.id === id);
+    if (!m) return json({ ok: false, error: 'not found' }, 404);
+    if (!Array.isArray(m.replies)) m.replies = [];
+    const reply = { id: genId(), text, ts: Date.now() };
+    m.replies.push(reply);
+    await putMessages(env, msgs);
+    return json({ ok: true, reply });
+  }
+
+  // DELETE /api/guestbook?id=..&key=..[&rid=..] → admin moderation (key = ADMIN_KEY secret)
+  // with rid → delete a single reply; without → delete the whole message
   if (path === '/api/guestbook' && request.method === 'DELETE') {
     const key = url.searchParams.get('key');
     if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) return json({ ok: false, error: 'unauthorized' }, 401);
     const id = url.searchParams.get('id');
+    const rid = url.searchParams.get('rid');
     let msgs = await getMessages(env);
-    msgs = msgs.filter(x => x.id !== id);
+    if (rid) {
+      const m = msgs.find(x => x.id === id);
+      if (m && Array.isArray(m.replies)) m.replies = m.replies.filter(r => r.id !== rid);
+    } else {
+      msgs = msgs.filter(x => x.id !== id);
+    }
     await putMessages(env, msgs);
     return json({ ok: true });
   }
