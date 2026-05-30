@@ -1561,20 +1561,50 @@ body.night-mode .star {
 
 .links-list a {
   --c: var(--accent);
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 4px;
+  padding: 12px 10px 12px 12px;
+  border-radius: 7px;
   text-decoration: none;
   color: var(--text);
   font-size: 13px;
-  transition: padding 0.18s ease, color 0.18s ease;
+  transition: padding 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+
+/* crimson accent bar that grows on hover */
+.links-list a::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 0;
+  background: linear-gradient(180deg, #ff8aab, rgba(180, 30, 70, 0.4));
+  border-radius: 2px;
+  transform: translateY(-50%);
+  transition: height 0.2s ease;
+}
+
+/* external-link arrow, fades in on hover */
+.links-list a::after {
+  content: "↗";
+  margin-left: auto;
+  font-size: 12px;
+  color: #ff8aab;
+  opacity: 0;
+  transform: translateX(-3px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .links-list a:hover {
-  padding-left: 12px;
+  padding-left: 16px;
   color: var(--c);
+  background: rgba(180, 30, 70, 0.06);
 }
+.links-list a:hover::before { height: 60%; }
+.links-list a:hover::after { opacity: 0.85; transform: translateX(0); }
 
 .links-list .link-icon {
   color: var(--c);
@@ -3631,16 +3661,18 @@ body.light-chaos {
   flex: 1 1 110px;
   min-width: 110px;
   padding: 12px 14px;
-  background: rgba(20, 14, 28, 0.55);
-  border: 1px solid rgba(180, 120, 200, 0.18);
+  background: rgba(20, 12, 20, 0.55);
+  border: 1px solid rgba(180, 30, 70, 0.16);
   border-radius: 10px;
   backdrop-filter: blur(8px);
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.22s ease;
 }
 .stat-box:hover {
   border-color: rgba(255, 126, 182, 0.4);
   transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), 0 0 16px rgba(180, 30, 70, 0.16);
 }
+.stat-box:hover .stat-val { color: #ffd9e3; text-shadow: 0 0 10px rgba(180, 30, 70, 0.35); }
 .stat-box-wide { flex: 2 1 200px; }
 .stat-val {
   font-family: 'Instrument Serif', serif;
@@ -3648,6 +3680,7 @@ body.light-chaos {
   color: var(--text);
   line-height: 1;
   letter-spacing: 0.5px;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
 }
 .stat-label {
   font-family: 'JetBrains Mono', monospace;
