@@ -38,6 +38,7 @@ html { scrollbar-color: rgba(180, 30, 70, 0.45) transparent; scrollbar-width: th
   .ground-fog,
   .fog-wisp,
   .tree-branch,
+  .tree-branch-2,
   .stars .star,
   .activity-row.spotify .activity-art,
   .music-eq.fake span,
@@ -82,9 +83,9 @@ body {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  /* native cursor = perfect tracking. small dark cherry petal pointing up, tip = mouse hot spot at (14, 2). */
+  /* clean + cold: small hollow ring cursor (off-white outline only). hot spot = center (8, 8). */
   body {
-    cursor: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cpath d='M 14 2 C 19 7 23 13 20 21 C 18 25 14 26 14 26 C 14 26 10 25 8 21 C 5 13 9 7 14 2 Z' fill='%2315101a' stroke='%237a0a22' stroke-width='1' stroke-linejoin='round'/%3E%3Cpath d='M 14 5 L 14 23' stroke='%235a4a5a' stroke-width='0.6' opacity='0.55'/%3E%3C/svg%3E") 14 2, default;
+    cursor: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='5.5' fill='none' stroke='%23d8dce4' stroke-width='1.2' opacity='0.95'/%3E%3C/svg%3E") 8 8, default;
   }
 
   /* konami code activates ryuk cursor for 10s — small ryuk silhouette holding apple, hot spot at center-ish */
@@ -302,7 +303,6 @@ body.night-mode .ground-fog {
 body.night-mode .fog {
   opacity: 0.75;
 }
-body.night-mode .mountains { opacity: 0.7; }
 body.night-mode .mascot-zzz span {
   animation-duration: 3.2s;
   opacity: 0.85;
@@ -312,39 +312,6 @@ body.night-mode .mascot-cat {
 }
 body.night-mode .star {
   filter: brightness(1.15);
-}
-
-/* ===== notebook paper texture (very faint) ===== */
-.notebook-paper {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.035;
-  background-image: repeating-linear-gradient(
-    180deg,
-    transparent 0px,
-    transparent 27px,
-    rgba(255, 80, 110, 0.9) 27px,
-    rgba(255, 80, 110, 0.9) 28px
-  );
-  mix-blend-mode: screen;
-}
-
-/* distant jagged mountain silhouette along the bottom edge */
-.mountains {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 160px;
-  z-index: -2;
-  pointer-events: none;
-  opacity: 0.85;
-  filter: drop-shadow(0 -2px 8px rgba(40, 6, 18, 0.4));
-}
-@media (max-width: 540px) {
-  .mountains { height: 110px; }
 }
 
 /* slow rolling fog at the bottom of the screen */
@@ -589,7 +556,7 @@ body.night-mode .star {
   80%      { rotate: -0.4deg; }
 }
 
-/* additional branches reaching across the top — feels like a partial canopy, not bunched up */
+/* additional canopy branch */
 .tree-branch-2 {
   top: -28px;
   right: 26%;
@@ -599,42 +566,11 @@ body.night-mode .star {
   transform: rotate(6deg);
   z-index: -1;
 }
-.tree-branch-3 {
-  top: -42px;
-  right: 50%;
-  width: 280px;
-  height: 200px;
-  opacity: 0.55;
-  transform: rotate(-3deg);
-  z-index: -1;
-  filter:
-    drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6))
-    drop-shadow(0 0 12px rgba(80, 8, 22, 0.35))
-    blur(0.4px);
-}
 @media (max-width: 1024px) {
   .tree-branch-2 { width: 260px; height: 200px; right: 18%; opacity: 0.7; }
-  .tree-branch-3 { width: 220px; height: 160px; right: 44%; opacity: 0.45; }
 }
 @media (max-width: 720px) {
-  /* canopy gets crowded on mobile — hide the smallest one, scale others */
   .tree-branch-2 { width: 180px; height: 140px; right: 12%; opacity: 0.6; }
-  .tree-branch-3 { display: none; }
-}
-
-/* mirrored smaller branch in bottom-left for symmetry */
-.tree-branch-bl {
-  top: auto;
-  right: auto;
-  bottom: -28px;
-  left: -44px;
-  width: 280px;
-  height: 220px;
-  transform: rotate(180deg);
-  opacity: 0.7;
-}
-@media (max-width: 768px) {
-  .tree-branch-bl { width: 180px; height: 140px; opacity: 0.5; }
 }
 
 /* lone crow flying across the screen */
@@ -683,32 +619,6 @@ body.night-mode .star {
   50%  { transform: translate(calc(var(--drift, -200px) * 0.5), 50vh) rotate(calc(var(--start-rot, 0deg) + 360deg)); }
   90%  { opacity: 0.85; }
   100% { opacity: 0; transform: translate(var(--drift, -200px), 110vh) rotate(calc(var(--start-rot, 0deg) + 720deg)); }
-}
-
-/* ===== drifting feathers (subtle ryuk ref) ===== */
-.feathers {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  overflow: hidden;
-}
-.feather {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  opacity: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 C8 6 5 11 5 16 C5 19 7 21 9 21 L11 21 L11 13 L12 12 L12 21 L14 21 C17 21 19 18 19 14 C19 8 16 4 12 2 Z' fill='%23090208' stroke='%231a0006' stroke-width='0.5'/%3E%3C/svg%3E") center/contain no-repeat;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6));
-  animation: featherFall var(--dur, 22s) linear forwards;
-  transform-origin: center;
-}
-@keyframes featherFall {
-  0%   { opacity: 0; transform: translate(0, -10vh) rotate(0deg); }
-  10%  { opacity: 0.75; }
-  50%  { transform: translate(var(--sx, 60px), 50vh) rotate(180deg); }
-  90%  { opacity: 0.75; }
-  100% { opacity: 0; transform: translate(var(--ex, -40px), 110vh) rotate(360deg); }
 }
 
 .constellation {
@@ -1025,22 +935,6 @@ body.night-mode .star {
 
 /* section heading with the akryst-style dash prefix, BUT made our own:
    uppercase, letter-spaced, muted, prefixed by a longer accent line */
-/* small crimson petal ornament between major sections (subtle rhythm) */
-.row + .row { position: relative; }
-.row + .row::before {
-  content: '';
-  position: absolute;
-  top: -18px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  background: radial-gradient(ellipse at 50% 35%, #8a1538, #2a0510);
-  box-shadow: 0 0 8px rgba(180, 30, 70, 0.45);
-  opacity: 0.7;
-}
-
 .sec-heading {
   display: flex;
   align-items: center;
@@ -2280,73 +2174,44 @@ body.light-chaos {
 }
 
 .webring {
-  margin-top: 36px;
+  margin-top: 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 32px 0 0;
-  position: relative;
-}
-.webring::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 220px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(180, 30, 70, 0.45), transparent);
-}
-.webring::after {
-  content: '✦';
-  position: absolute;
-  top: -7px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 14px;
-  color: #8a1538;
-  background: var(--bg, #04020a);
-  padding: 0 8px;
-  text-shadow: 0 0 8px rgba(180, 30, 70, 0.55);
+  gap: 6px;
+  padding: 28px 0 0;
 }
 
 .webring-row {
   display: flex;
   align-items: center;
-  gap: 18px;
-  font-family: 'Instrument Serif', serif;
-  font-style: italic;
-  font-size: 15px;
-  color: rgba(236, 232, 240, 0.7);
-  letter-spacing: 0.3px;
+  gap: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: rgba(236, 232, 240, 0.45);
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
 }
 
 .webring-arrow {
-  color: rgba(180, 30, 70, 0.55);
+  color: rgba(236, 232, 240, 0.3);
   text-decoration: none;
-  font-size: 14px;
-  transition: color 0.18s ease, transform 0.18s ease, text-shadow 0.18s ease;
+  font-size: 11px;
+  transition: color 0.18s ease;
 }
-
-.webring-arrow:hover {
-  color: #ff8aab;
-  transform: scale(1.25);
-  text-shadow: 0 0 10px rgba(180, 30, 70, 0.7);
-}
+.webring-arrow:hover { color: rgba(255, 138, 171, 0.85); }
 
 .webring-name {
-  color: rgba(236, 232, 240, 0.75);
-  letter-spacing: 0.5px;
+  color: rgba(236, 232, 240, 0.55);
+  letter-spacing: 0.18em;
   text-transform: lowercase;
-  font-style: italic;
 }
 
 .webring-meta {
   font-family: 'JetBrains Mono', monospace;
-  color: rgba(180, 30, 70, 0.4);
+  color: rgba(236, 232, 240, 0.22);
   font-size: 10px;
-  letter-spacing: 1.5px;
+  letter-spacing: 0.18em;
   text-transform: lowercase;
 }
 

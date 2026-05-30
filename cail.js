@@ -1280,7 +1280,6 @@ function initCmdK() {
 
   const COMMANDS = [
     { icon: '🌸', name: 'trigger wind gust',     tag: 'fx',   run: () => spawnWindGust() },
-    { icon: '🪶', name: 'drop a single feather', tag: 'fx',   run: () => spawnSingleFeather() },
     { icon: '⚡', name: 'thunder rumble',         tag: 'fx',   run: () => triggerThunder() },
     { icon: '🦅', name: 'send a crow',            tag: 'fx',   run: () => spawnCrowNow() },
     { icon: '🍎', name: 'ryuk mode (10s)',        tag: 'easter', run: () => triggerRyuk() },
@@ -1373,20 +1372,6 @@ function spawnWindGust() {
     }, i * 150);
   }
 }
-function spawnSingleFeather() {
-  const host = $('#feathers');
-  if (!host) return;
-  const f = document.createElement('div');
-  f.className = 'feather';
-  f.style.left = (20 + Math.random() * 60) + 'vw';
-  f.style.width = '24px';
-  f.style.height = '24px';
-  f.style.setProperty('--sx', (Math.random() - 0.5) * 220 + 'px');
-  f.style.setProperty('--ex', (Math.random() - 0.5) * 260 + 'px');
-  f.style.setProperty('--dur', '20s');
-  host.appendChild(f);
-  setTimeout(() => f.remove(), 20500);
-}
 function triggerThunder() {
   const flash = $('#thunderFlash');
   const bolt = $('#lightning');
@@ -1441,27 +1426,6 @@ function initKonami() {
 function triggerRyuk() {
   document.body.classList.add('ryuk-mode');
   if (typeof showToast === 'function') showToast('found one of em 🍎');
-  // shower of black feathers from the cursor area
-  const featherHost = $('#feathers');
-  if (featherHost) {
-    for (let i = 0; i < 5; i++) {
-      setTimeout(() => {
-        const f = document.createElement('div');
-        f.className = 'feather';
-        f.style.left = (30 + Math.random() * 40) + 'vw';
-        f.style.width = '24px';
-        f.style.height = '24px';
-        const sway = (Math.random() - 0.5) * 180;
-        const drift = (Math.random() - 0.5) * 240;
-        const dur = 14 + Math.random() * 6;
-        f.style.setProperty('--sx', sway + 'px');
-        f.style.setProperty('--ex', drift + 'px');
-        f.style.setProperty('--dur', dur + 's');
-        featherHost.appendChild(f);
-        setTimeout(() => f.remove(), dur * 1000 + 200);
-      }, i * 200);
-    }
-  }
   setTimeout(() => document.body.classList.remove('ryuk-mode'), 10000);
 }
 
@@ -1485,34 +1449,6 @@ function initCrow() {
     setTimeout(fly, 130000 + Math.random() * 70000); // 2:10 to 3:20 minutes between
   }
   setTimeout(fly, 45000); // first crow after 45s
-}
-
-function initFeathers() {
-  const host = $('#feathers');
-  if (!host) return;
-  function spawn() {
-    const f = document.createElement('div');
-    f.className = 'feather';
-    const startX = Math.random() * 90 + 5; // 5vw - 95vw
-    const sway   = (Math.random() - 0.5) * 220;
-    const drift  = (Math.random() - 0.5) * 260;
-    const dur    = 24 + Math.random() * 14;
-    const size   = 18 + Math.random() * 14;
-    f.style.left = startX + 'vw';
-    f.style.width  = size + 'px';
-    f.style.height = size + 'px';
-    f.style.setProperty('--sx', sway + 'px');
-    f.style.setProperty('--ex', drift + 'px');
-    f.style.setProperty('--dur', dur + 's');
-    host.appendChild(f);
-    setTimeout(() => f.remove(), dur * 1000 + 200);
-  }
-  function loop() {
-    spawn();
-    const next = 28000 + Math.random() * 32000; // 28-60s between feathers
-    setTimeout(loop, next);
-  }
-  setTimeout(loop, 5000);
 }
 
 // each .row section gently lifts + fades in as it enters the viewport
@@ -2152,7 +2088,6 @@ runBoot().then(() => {
   initWebBtns();
   initStarfield();
   initShootingStars();
-  initFeathers();
   initNightMode();
   initPetals();
   initCrow();
