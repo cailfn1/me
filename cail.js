@@ -1102,7 +1102,7 @@ function triggerConfetti(btn) {
   const rect = btn.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
-  const colors = ['#7289da','#9b59dc','#3aa5b3','#dc5082','#f7df1e','#ff5e5b'];
+  const colors = ['#ff8aab','#a01a40','#ff5e5b','#ffd47a','#d8dce4','#8a1538'];
   for (let i = 0; i < 30; i++) {
     const bit = document.createElement('div');
     bit.className = 'confetti-bit';
@@ -1127,6 +1127,44 @@ function showNoSleep() {
   const h = now.getHours().toString().padStart(2, '0');
   const m = now.getMinutes().toString().padStart(2, '0');
   showToast(`it's ${h}:${m}. why am i still awake`);
+}
+
+// "secret ?" — a different cryptic line each click + a random atmospheric flourish
+const SECRET_LINES = [
+  'the moon remembers every name written in the book.',
+  'you found a door. there are others. keep looking.',
+  'death note taught me patience.',
+  'every petal that falls is a second you will not get back.',
+  'if you are reading this, you scroll too much. (so do i.)',
+  'try the konami code. up up down down...',
+  'cail.exe has been running since 2026. no crashes yet.',
+  'press / and type help. that is where the real secrets live.',
+];
+let _secretIdx = Math.floor(Math.random() * SECRET_LINES.length);
+function revealSecret() {
+  _secretIdx = (_secretIdx + 1) % SECRET_LINES.length;
+  showToast(SECRET_LINES[_secretIdx]);
+  // a random on-screen flourish so it genuinely *does* something
+  const fx = [];
+  if (typeof spawnCrowNow === 'function')  fx.push(spawnCrowNow);
+  if (typeof spawnWindGust === 'function') fx.push(spawnWindGust);
+  if (typeof triggerThunder === 'function') fx.push(triggerThunder);
+  if (fx.length) { try { fx[Math.floor(Math.random() * fx.length)](); } catch {} }
+}
+
+// "hand coded" — cycle through real build-flex facts instead of one static toast
+const BUILD_FACTS = [
+  '0 dependencies. 0 frameworks. 0 build step.',
+  'just html, css, and vanilla js. that is it.',
+  'every animation is hand-written css.',
+  'deployed on cloudflare workers — no server to babysit.',
+  'the guestbook runs on a worker + kv i wrote myself.',
+  'view source if you want. it is all right there.',
+];
+let _factIdx = -1;
+function devFlex() {
+  _factIdx = (_factIdx + 1) % BUILD_FACTS.length;
+  showToast(BUILD_FACTS[_factIdx]);
 }
 
 function triggerShuffle() {
@@ -1773,10 +1811,11 @@ function initWebBtns() {
         case 'confetti':  triggerConfetti(btn);           break;
         case 'terminal':  openTerminal();                 break;
         case 'toast':     showToast(btn.dataset.msg);     break;
+        case 'devflex':   devFlex();                      break;
         case 'nosleep':   showNoSleep();                  break;
         case 'snake':     openGame();                     break;
         case 'shuffle':   triggerShuffle();               break;
-        case 'hint':      showToast('there are hidden things. press / and type help'); break;
+        case 'hint':      revealSecret();                 break;
       }
     });
   });
