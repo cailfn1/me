@@ -447,6 +447,44 @@ const MANUAL_BADGES = [
   { name: 'Completed a Quest', hash: QUEST_BADGE_HASH },
 ];
 
+// retro 88×31 web-buttons (classic neocities/webring collectible look), crimson theme.
+// icon = a unicode glyph rendered in crimson; href optional (pure flair if omitted).
+const BUTTONS_88 = [
+  { icon: '♥',   l1: 'cail',        l2: '.love',       accent: true, href: 'https://cail.love' },
+  { icon: '☾',   l1: 'best viewed', l2: 'in darkness' },
+  { icon: '✦',   l1: 'vampire',     l2: 'hours',       blink: true },
+  { icon: '☾',   l1: 'no sleep',    l2: 'gang' },
+  { icon: '</>', l1: 'hand coded',  l2: 'no a.i.',     href: 'https://github.com/cailfn1/me' },
+  { icon: '▶',   l1: 'certified',   l2: 'weeb',        href: 'https://anilist.co/user/cailfn/' },
+  { icon: '✝',   l1: 'gothic mode', l2: ': on',        blink: true },
+  { icon: '✱',   l1: 'powered by',  l2: 'insomnia' },
+];
+
+function initButtons88() {
+  const wrap = $('#buttons88');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  BUTTONS_88.forEach(b => {
+    const el = document.createElement(b.href ? 'a' : 'div');
+    el.className = 'btn88' + (b.accent ? ' accent' : '') + ((b.blink && !reducedMotion) ? ' blink' : '');
+    if (b.href) { el.href = b.href; el.target = '_blank'; el.rel = 'noopener'; }
+    const label = `${b.l1} ${b.l2}`.replace(/\s+/g, ' ').trim();
+    el.title = label;
+    el.setAttribute('aria-label', label);
+    const ic = document.createElement('span');
+    ic.className = 'btn88-ic';
+    ic.setAttribute('aria-hidden', 'true');
+    ic.textContent = b.icon;
+    const tx = document.createElement('span');
+    tx.className = 'btn88-tx';
+    const l1 = document.createElement('span'); l1.className = 'btn88-l1'; l1.textContent = b.l1;
+    const l2 = document.createElement('span'); l2.className = 'btn88-l2'; l2.textContent = b.l2;
+    tx.append(l1, l2);
+    el.append(ic, tx);
+    wrap.appendChild(el);
+  });
+}
+
 function renderDiscordBadges(user) {
   const wrap = $('#discordBadges');
   if (!wrap || !user) return;
@@ -3128,6 +3166,7 @@ runBoot().then(() => {
   startClock();
   initTaglineRotator();
   initReactiveName();
+  initButtons88();
   initMusic();
   initVisitorCounter();
   typeBio();
