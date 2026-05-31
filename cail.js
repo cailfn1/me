@@ -148,10 +148,15 @@ function initReactiveName() {
   const RADIUS = 115;
   let raf = null, px = -9999, py = -9999, active = false, ready = false;
 
-  // wait for the ink-in load animation to finish, then take over transforms
+  // wait for the ink-in load animation to finish, then take over transforms.
+  // bake the inkIn end-state into inline styles first, because `animation:none`
+  // strips the `forwards` fill and would otherwise revert the letters to opacity:0.
   setTimeout(() => {
     ready = true;
     letters.forEach(l => {
+      l.style.opacity = '1';
+      l.style.filter = 'none';
+      l.style.transform = 'none';
       l.style.animation = 'none';                                   // stop inkIn so it can't replay
       l.style.transition = 'transform 0.34s cubic-bezier(.2,.7,.2,1)';
     });
@@ -171,7 +176,7 @@ function initReactiveName() {
         const ux = dx / (dist || 1), uy = dy / (dist || 1);
         l.style.transform = `translate(${ux * f * 26}px, ${uy * f * 26}px) rotate(${ux * f * 13}deg)`;
       } else {
-        l.style.transform = '';
+        l.style.transform = 'none';
       }
     }
   }
