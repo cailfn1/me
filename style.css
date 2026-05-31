@@ -601,7 +601,7 @@ body.night-mode .star {
 }
 .cmdk-item.active {
   background: rgba(180, 30, 70, 0.14);
-  border-left-color: var(--pink, #ff7eb6);
+  border-left-color: var(--pink, #ff8aab);
 }
 .cmdk-item:hover { background: rgba(180, 30, 70, 0.08); }
 .cmdk-icon {
@@ -805,7 +805,7 @@ body.night-mode .star {
   right: 4px;
   width: 80px;
   height: 1.5px;
-  background: linear-gradient(to left, rgba(255, 220, 240, 0.95), rgba(255, 126, 182, 0.4), transparent);
+  background: linear-gradient(to left, rgba(255, 220, 240, 0.95), rgba(180, 30, 70,0.4), transparent);
   transform: translateY(-50%);
   border-radius: 999px;
   filter: blur(0.5px);
@@ -875,20 +875,20 @@ body.night-mode .star {
 
 .aurora::before {
   background: conic-gradient(from 0deg,
-    rgba(114, 137, 218, 0.35) 0%,
-    rgba(155, 89, 220, 0.30) 25%,
-    rgba(58, 165, 179, 0.32) 50%,
-    rgba(220, 80, 130, 0.28) 75%,
-    rgba(114, 137, 218, 0.35) 100%);
+    rgba(180, 30, 70, 0.34) 0%,
+    rgba(140, 16, 50, 0.28) 25%,
+    rgba(200, 45, 85, 0.30) 50%,
+    rgba(120, 10, 40, 0.30) 75%,
+    rgba(180, 30, 70, 0.34) 100%);
   animation: auroraSpinA 90s linear infinite;
 }
 
 .aurora::after {
   background: conic-gradient(from 180deg,
-    rgba(58, 165, 179, 0.28) 0%,
-    rgba(114, 137, 218, 0.32) 33%,
-    rgba(220, 80, 130, 0.22) 66%,
-    rgba(58, 165, 179, 0.28) 100%);
+    rgba(120, 10, 40, 0.26) 0%,
+    rgba(200, 45, 85, 0.30) 33%,
+    rgba(150, 18, 56, 0.24) 66%,
+    rgba(120, 10, 40, 0.26) 100%);
   animation: auroraSpinB 130s linear infinite;
   opacity: 0.45;
 }
@@ -959,7 +959,7 @@ body.night-mode .star {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(transparent 0%, rgba(114, 137, 218, 0.04) 50%, transparent 100%);
+  background: linear-gradient(transparent 0%, rgba(180, 30, 70, 0.05) 50%, transparent 100%);
   background-size: 100% 8px;
   animation: scanFlicker 7s linear infinite;
   pointer-events: none;
@@ -2561,10 +2561,10 @@ body.light-chaos {
 
 .music-eq span {
   width: 2.5px;
-  background: linear-gradient(180deg, #ffb4d2, #ff7eb6);
+  background: linear-gradient(180deg, #ffd9e3, #ff8aab);
   border-radius: 999px;
   height: 25%;
-  box-shadow: 0 0 4px rgba(255, 126, 182, 0.5);
+  box-shadow: 0 0 4px rgba(180, 30, 70,0.5);
   transition: height 60ms linear;
 }
 
@@ -2990,31 +2990,6 @@ body.light-chaos {
 .footer-nav a:hover { color: #ff8aab; }
 .footer-nav a:hover::after { width: 100%; }
 
-.webring-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: rgba(236, 232, 240, 0.45);
-  letter-spacing: 0.18em;
-  text-transform: lowercase;
-}
-
-.webring-arrow {
-  color: rgba(236, 232, 240, 0.3);
-  text-decoration: none;
-  font-size: 11px;
-  transition: color 0.18s ease;
-}
-.webring-arrow:hover { color: rgba(255, 138, 171, 0.85); }
-
-.webring-name {
-  color: rgba(236, 232, 240, 0.55);
-  letter-spacing: 0.18em;
-  text-transform: lowercase;
-}
-
 .webring-meta {
   font-family: 'JetBrains Mono', monospace;
   color: rgba(236, 232, 240, 0.22);
@@ -3086,15 +3061,15 @@ body.light-chaos {
   align-items: center;
   gap: 10px;
   padding: 8px 18px 8px 10px;
-  background: linear-gradient(135deg, rgba(28, 22, 36, 0.78), rgba(18, 14, 26, 0.82));
-  border: 1px solid rgba(255, 126, 182, 0.16);
+  background: linear-gradient(135deg, rgba(26, 12, 20, 0.80), rgba(16, 8, 14, 0.84));
+  border: 1px solid rgba(180, 30, 70,0.16);
   border-radius: 999px;
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 20px rgba(255, 126, 182, 0.06);
+    0 0 20px rgba(180, 30, 70,0.06);
   z-index: 10;
   min-width: 320px;
   max-width: 380px;
@@ -3102,11 +3077,11 @@ body.light-chaos {
 }
 
 .music-widget:hover {
-  border-color: rgba(255, 126, 182, 0.28);
+  border-color: rgba(180, 30, 70,0.28);
   box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 0 32px rgba(255, 126, 182, 0.14);
+    0 0 32px rgba(180, 30, 70,0.14);
   transform: translateY(-2px);
 }
 
@@ -3115,7 +3090,7 @@ body.light-chaos {
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #ff7eb6 0%, #d65b9a 100%);
+  background: linear-gradient(135deg, #c81e46 0%, #8a1538 100%);
   color: #fff;
   display: flex;
   align-items: center;
@@ -3124,7 +3099,7 @@ body.light-chaos {
   transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.5, 1), box-shadow 0.2s ease;
   flex-shrink: 0;
   box-shadow:
-    0 4px 14px rgba(255, 126, 182, 0.45),
+    0 4px 14px rgba(180, 30, 70,0.45),
     inset 0 1px 1px rgba(255, 255, 255, 0.25),
     inset 0 -2px 4px rgba(0, 0, 0, 0.15);
   cursor: pointer;
@@ -3133,7 +3108,7 @@ body.light-chaos {
 .music-btn:hover {
   transform: scale(1.08);
   box-shadow:
-    0 6px 20px rgba(255, 126, 182, 0.6),
+    0 6px 20px rgba(180, 30, 70,0.6),
     inset 0 1px 1px rgba(255, 255, 255, 0.3);
 }
 
@@ -3145,16 +3120,16 @@ body.light-chaos {
   width: 24px;
   height: 24px;
   background: transparent;
-  color: rgba(255, 200, 230, 0.55);
+  color: rgba(255, 170, 195,0.55);
   font-size: 8px;
   box-shadow: none;
   border: 1px solid transparent;
 }
 
 .music-btn.music-skip:hover {
-  background: rgba(255, 126, 182, 0.12);
-  color: rgba(255, 200, 230, 1);
-  border-color: rgba(255, 126, 182, 0.25);
+  background: rgba(180, 30, 70,0.12);
+  color: rgba(255, 170, 195,1);
+  border-color: rgba(180, 30, 70,0.25);
   transform: scale(1.1);
   box-shadow: none;
 }
@@ -3181,7 +3156,7 @@ body.light-chaos {
 
 .music-bar {
   height: 2px;
-  background: rgba(255, 126, 182, 0.14);
+  background: rgba(180, 30, 70,0.14);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -3189,9 +3164,9 @@ body.light-chaos {
 .music-bar-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #ff7eb6, #ffb4d2);
+  background: linear-gradient(90deg, #ff8aab, #ffd9e3);
   border-radius: 999px;
-  box-shadow: 0 0 6px rgba(255, 126, 182, 0.55);
+  box-shadow: 0 0 6px rgba(180, 30, 70,0.55);
   transition: width 0.2s linear;
 }
 
@@ -3200,7 +3175,7 @@ body.light-chaos {
   appearance: none;
   width: 64px;
   height: 3px;
-  background: rgba(255, 126, 182, 0.18);
+  background: rgba(180, 30, 70,0.18);
   border-radius: 999px;
   outline: none;
   cursor: pointer;
@@ -3212,9 +3187,9 @@ body.light-chaos {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: #ff7eb6;
+  background: #ff8aab;
   border: none;
-  box-shadow: 0 0 8px rgba(255, 126, 182, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 8px rgba(180, 30, 70,0.7), inset 0 1px 1px rgba(255, 255, 255, 0.3);
   cursor: pointer;
   transition: transform 0.15s ease;
 }
@@ -3227,9 +3202,9 @@ body.light-chaos {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: #ff7eb6;
+  background: #ff8aab;
   border: none;
-  box-shadow: 0 0 8px rgba(255, 126, 182, 0.7);
+  box-shadow: 0 0 8px rgba(180, 30, 70,0.7);
 }
 
 .mascot {
@@ -3273,13 +3248,13 @@ body.light-chaos {
   font-family: 'Instrument Serif', serif;
   font-style: italic;
   font-size: 14px;
-  color: rgba(255, 200, 230, 0.8);
+  color: rgba(255, 170, 195,0.8);
 }
 
 .mascot-zzz span {
   display: inline-block;
   animation: zzzFloat 2.4s ease-in-out infinite;
-  text-shadow: 0 0 6px rgba(255, 126, 182, 0.5);
+  text-shadow: 0 0 6px rgba(180, 30, 70,0.5);
 }
 .mascot-zzz span:nth-child(1) { animation-delay: 0s;   font-size: 10px; }
 .mascot-zzz span:nth-child(2) { animation-delay: 0.4s; font-size: 13px; }
@@ -3356,7 +3331,7 @@ body.light-chaos {
   transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
 }
 .status-bar:hover {
-  border-color: rgba(255, 126, 182, 0.42);
+  border-color: rgba(180, 30, 70,0.42);
   box-shadow:
     0 8px 28px rgba(0, 0, 0, 0.6),
     0 0 32px rgba(180, 30, 70, 0.32),
@@ -3374,9 +3349,9 @@ body.light-chaos {
   font-style: italic;
   font-size: 20px;
   font-weight: 400;
-  color: #ffb4d2;
+  color: #ffd9e3;
   letter-spacing: 0.3px;
-  text-shadow: 0 0 10px rgba(255, 126, 182, 0.35);
+  text-shadow: 0 0 10px rgba(180, 30, 70,0.35);
 }
 .stat-pill-lbl {
   font-family: 'JetBrains Mono', monospace;
@@ -3835,12 +3810,12 @@ body.light-chaos {
   overflow-y: hidden;
   padding: 4px 4px 12px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 126, 182, 0.3) transparent;
+  scrollbar-color: rgba(180, 30, 70,0.3) transparent;
 }
 .anime-grid::-webkit-scrollbar { height: 6px; }
 .anime-grid::-webkit-scrollbar-track { background: transparent; }
-.anime-grid::-webkit-scrollbar-thumb { background: rgba(255, 126, 182, 0.3); border-radius: 999px; }
-.anime-grid::-webkit-scrollbar-thumb:hover { background: rgba(255, 126, 182, 0.5); }
+.anime-grid::-webkit-scrollbar-thumb { background: rgba(180, 30, 70,0.3); border-radius: 999px; }
+.anime-grid::-webkit-scrollbar-thumb:hover { background: rgba(180, 30, 70,0.5); }
 
 .anime-loading {
   font-family: 'JetBrains Mono', monospace;
@@ -3869,13 +3844,13 @@ body.light-chaos {
   background-size: cover;
   background-position: center;
   background-color: #1c1c22;
-  border: 1px solid rgba(255, 126, 182, 0.15);
+  border: 1px solid rgba(180, 30, 70,0.15);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .anime-card:hover .anime-cover {
-  box-shadow: 0 6px 20px rgba(255, 126, 182, 0.25);
-  border-color: rgba(255, 126, 182, 0.4);
+  box-shadow: 0 6px 20px rgba(180, 30, 70,0.25);
+  border-color: rgba(180, 30, 70,0.4);
 }
 .anime-title {
   font-size: 11px;
@@ -3908,7 +3883,7 @@ body.light-chaos {
   text-decoration: none;
   border-bottom: 1px dotted rgba(255, 158, 197, 0.4);
 }
-.anime-tag a:hover { color: #ffb4d2; border-bottom-color: rgba(255, 180, 210, 0.7); }
+.anime-tag a:hover { color: #ffd9e3; border-bottom-color: rgba(255, 180, 210, 0.7); }
 
 /* ===== recent tracks (last.fm) ===== */
 .tracks-list {
@@ -4027,7 +4002,7 @@ body.light-chaos {
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.22s ease;
 }
 .stat-box:hover {
-  border-color: rgba(255, 126, 182, 0.4);
+  border-color: rgba(180, 30, 70,0.4);
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), 0 0 16px rgba(180, 30, 70, 0.16);
 }
