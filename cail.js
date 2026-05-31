@@ -447,67 +447,31 @@ const MANUAL_BADGES = [
   { name: 'Completed a Quest', hash: QUEST_BADGE_HASH },
 ];
 
-// custom crimson flair badges — small icon tiles that sit on the same shelf as the
-// live Discord badges. each is a hand-drawn line-icon (crimson via currentColor).
-const FLAIR_ICONS = {
-  moon:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
-  blood:      '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>',
-  dumbbell:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>',
-  headphones: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="2.5" y="14" width="4" height="6" rx="1.2" fill="currentColor" stroke="none"/><rect x="17.5" y="14" width="4" height="6" rx="1.2" fill="currentColor" stroke="none"/></svg>',
-  screen:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M10.5 8.4l4 2.6-4 2.6z" fill="currentColor" stroke="none"/></svg>',
-  code:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg>',
-  coffee:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13v5a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 5.6c.4-.6.4-1.2 0-1.9M12 5.6c.4-.6.4-1.2 0-1.9"/></svg>',
-};
-const FLAIR_BADGES = [
-  { icon: 'moon',       name: 'nocturnal' },
-  { icon: 'blood',      name: 'bleeds crimson' },
-  { icon: 'dumbbell',   name: 'gym rat' },
-  { icon: 'headphones', name: 'music always on' },
-  { icon: 'screen',     name: 'anime addict' },
-  { icon: 'code',       name: 'hand-coded · no a.i.' },
-  { icon: 'coffee',     name: 'caffeine-powered' },
+// flex the full set of real Discord profile badges (every rare one), regardless of flags
+const ALL_BADGES = [
+  ...DISCORD_BADGES.map(b => ({ name: b.name, hash: b.hash })),
+  { name: 'Discord Nitro',     hash: NITRO_BADGE_HASH },
+  { name: 'Completed a Quest', hash: QUEST_BADGE_HASH },
 ];
 
-function initFlairBadges() {
-  const wrap = $('#flairBadges');
-  if (!wrap) return;
-  wrap.innerHTML = '';
-  FLAIR_BADGES.forEach(b => {
-    const el = document.createElement('span');
-    el.className = 'fbadge';
-    el.setAttribute('data-label', b.name);
-    el.setAttribute('role', 'img');
-    el.setAttribute('aria-label', b.name);
-    el.title = b.name;
-    el.innerHTML = FLAIR_ICONS[b.icon] || '';
-    wrap.appendChild(el);
-  });
-}
-
-function renderDiscordBadges(user) {
+function renderDiscordBadges() {
   const wrap = $('#discordBadges');
-  if (!wrap || !user) return;
+  if (!wrap || wrap.dataset.rendered) return;   // render once — don't re-trigger the pop-in
+  wrap.dataset.rendered = '1';
   wrap.innerHTML = '';
-  const addBadge = (name, hash) => {
+  ALL_BADGES.forEach((b, i) => {
+    const span = document.createElement('span');
+    span.className = 'dbadge';
+    span.setAttribute('data-label', b.name);
+    span.style.setProperty('--i', i);
     const img = document.createElement('img');
-    img.src = `https://cdn.discordapp.com/badge-icons/${hash}.png`;
-    img.alt = name;
-    img.title = name;
+    img.src = `https://cdn.discordapp.com/badge-icons/${b.hash}.png`;
+    img.alt = b.name;
     img.loading = 'lazy';
-    img.onerror = () => img.remove();
-    wrap.appendChild(img);
-  };
-  const flags = user.public_flags || 0;
-  DISCORD_BADGES.forEach(b => {
-    if (flags & b.flag) addBadge(b.name, b.hash);
+    img.onerror = () => span.remove();
+    span.appendChild(img);
+    wrap.appendChild(span);
   });
-  // Nitro — detect via avatar_decoration_data presence (decorations are Nitro-only)
-  // OR premium_type if Lanyard ever exposes it
-  const hasNitro = (user.premium_type && user.premium_type > 0) ||
-                   (user.avatar_decoration_data && user.avatar_decoration_data.asset);
-  if (hasNitro) addBadge('Discord Nitro', NITRO_BADGE_HASH);
-  // Manual badges (Quest, etc.)
-  MANUAL_BADGES.forEach(b => addBadge(b.name, b.hash));
 }
 
 function applyDiscordAvatar(user) {
@@ -853,7 +817,7 @@ function initLanyard() {
     if (avatarEl) avatarEl.dataset.status = status;
     if (data.discord_user) {
       applyDiscordAvatar(data.discord_user);
-      renderDiscordBadges(data.discord_user);
+      renderDiscordBadges();
     }
     let label = '';
     let art = '';
@@ -3310,7 +3274,7 @@ runBoot().then(() => {
   startClock();
   initTaglineRotator();
   initReactiveName();
-  initFlairBadges();
+  renderDiscordBadges();
   initMusic();
   initVisitorCounter();
   typeBio();
