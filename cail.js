@@ -902,6 +902,10 @@ function initLanyard() {
       _aboutNowLive = false;
       startAboutNowIdleRotation();
     }
+
+    // drive the mood ring + lyric ticker off the live Spotify track
+    if (isSpotify) onTrackChange(data.spotify.artist, data.spotify.song);
+    else onTrackStop();
   };
   let ws;
   let heartbeat;
@@ -1207,6 +1211,134 @@ async function initLastfm() {
   await refresh();
   // refresh every 30s to keep "now playing" fresh
   setInterval(refresh, 30000);
+}
+
+// ===== music identity: "on repeat" shrine + lyric ticker + mood ring =====
+// driven by the live Spotify track (via Lanyard) + Last.fm, reusing LASTFM_KEY.
+function mClean(s) { return String(s == null ? '' : s).replace(/[<>&]/g, ''); }
+
+// ---- mood ring: shift the site's accent + ambient tint by genre ----
+const MOOD_TAGS = {
+  cold: ['sad','melancholy','melancholic','ambient','slowcore','shoegaze','dream pop','dreampop','lo-fi','lofi','sadcore','ethereal','emo','singer-songwriter','folk','soul','rnb','r&b','chill','downtempo','indie'],
+  hot:  ['hip hop','hip-hop','rap','trap','phonk','drill','metal','hardcore','punk','hyperpop','edm','dance','electronic','house','techno','dubstep','breakcore','industrial','rage','party'],
+};
+async function fetchArtistTags(artist) {
+  try {
+    const url = `https://ws.audioscrobbler.com/2.0/?method=artist.gettoptags&artist=${encodeURIComponent(artist)}&api_key=${LASTFM_KEY}&format=json`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const j = await res.json();
+    return (j?.toptags?.tag || []).slice(0, 8).map(t => (t.name || '').toLowerCase());
+  } catch { return []; }
+}
+function setMood(mood) { document.body.dataset.mood = mood; }
+async function applyMood(artist) {
+  const tags = await fetchArtistTags(artist);
+  let cold = 0, hot = 0;
+  for (const t of tags) {
+    if (MOOD_TAGS.cold.some(k => t.includes(k))) cold++;
+    if (MOOD_TAGS.hot.some(k => t.includes(k)))  hot++;
+  }
+  setMood(hot > cold ? 'hot' : cold > hot ? 'cold' : 'crimson');
+}
+
+// ---- lyric ticker: one rotating line from lrclib, drifting across the bottom ----
+let _lyricLines = [], _lyricIdx = 0, _lyricReq = 0;
+function hideLyricTicker() {
+  const el = $('#lyricTicker');
+  if (el) { el.classList.remove('show'); el.innerHTML = ''; }
+  _lyricLines = [];
+}
+function crawlNext() {
+  const el = $('#lyricTicker');
+  if (!el || !el.classList.contains('show') || !_lyricLines.length) return;
+  const line = _lyricLines[_lyricIdx % _lyricLines.length];
+  _lyricIdx++;
+  el.innerHTML = `<span class="lyric-line">${mClean(line)}</span>`;
+  el.firstChild.addEventListener('animationend', crawlNext, { once: true });
+}
+async function loadLyricsFor(artist, song) {
+  const el = $('#lyricTicker');
+  if (!el || reducedMotion) return;            // no crawl under reduced-motion
+  const req = ++_lyricReq;
+  hideLyricTicker();
+  try {
+    const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(song)}`;
+    const res = await fetch(url);
+    if (!res.ok || req !== _lyricReq) return;   // 404 = no lyrics → stay hidden
+    const j = await res.json();
+    if (req !== _lyricReq) return;              // a newer track superseded this
+    const raw = j.plainLyrics || (j.syncedLyrics || '').replace(/\[\d+:\d+[.\d]*\]/g, '');
+    const lines = (raw || '').split('\n').map(s => s.trim())
+      .filter(s => s && !/^\[.*\]$/.test(s) && s.length > 6 && s.length < 90);
+    if (!lines.length) return;
+    _lyricLines = lines; _lyricIdx = 0;
+    el.classList.add('show');
+    crawlNext();
+  } catch { /* no lyrics / CORS → stay hidden */ }
+}
+
+// ---- track-change dispatch (called from Lanyard's applyPresence) ----
+let _curTrackKey = null;
+function onTrackChange(artist, song) {
+  const key = `${artist} — ${song}`;
+  if (key === _curTrackKey) return;
+  _curTrackKey = key;
+  applyMood(artist);
+  loadLyricsFor(artist, song);
+}
+function onTrackStop() {
+  if (_curTrackKey === null) return;
+  _curTrackKey = null;
+  setMood('crimson');
+  hideLyricTicker();
+}
+
+// ---- "on repeat" shrine: this week's #1 Last.fm track as a spinning vinyl ----
+async function initOnRepeat() {
+  const host = $('#onRepeat');
+  if (!host) return;
+  let top = null;
+  try {
+    const url = `https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${LASTFM_USER}&api_key=${LASTFM_KEY}&period=7day&limit=1&format=json`;
+    const res = await fetch(url);
+    if (res.ok) top = (await res.json())?.toptracks?.track?.[0] || null;
+  } catch { top = null; }
+  if (!top) { host.style.display = 'none'; return; }
+  const name = top.name || '';
+  const artist = top.artist?.name || top.artist?.['#text'] || '';
+  const plays = parseInt(top.playcount || '0', 10);
+  let art = '';
+  try {
+    const url = `https://ws.audioscrobbler.com/2.0/?method=track.getInfo&artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(name)}&api_key=${LASTFM_KEY}&format=json`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const imgs = (await res.json())?.track?.album?.image || [];
+      art = (imgs.find(i => i.size === 'extralarge') || imgs.find(i => i.size === 'large') || {})['#text'] || '';
+    }
+  } catch {}
+  // last.fm serves a placeholder "star" png when it has no real art — treat that as none
+  const PLACEHOLDER = '2a96cbd8b46e442fc41c2b86b821562f';
+  if (art.includes(PLACEHOLDER)) art = '';
+  if (!art) {
+    const fb = (top.image && top.image.find(i => i.size === 'large')?.['#text']) || '';
+    if (fb && !fb.includes(PLACEHOLDER)) art = fb;
+  }
+  host.innerHTML = `
+    <div class="vinyl-frame">
+      <div class="vinyl">
+        ${art ? `<img class="vinyl-label" src="${art}" alt="" />` : `<div class="vinyl-label vinyl-label-empty"></div>`}
+        <div class="vinyl-hole"></div>
+      </div>
+      <div class="vinyl-arm"></div>
+    </div>
+    <div class="on-repeat-meta">
+      <div class="on-repeat-kicker">on repeat this week</div>
+      <div class="on-repeat-track">${mClean(name)}</div>
+      <div class="on-repeat-artist">${mClean(artist)}</div>
+      <div class="on-repeat-plays">${plays} play${plays === 1 ? '' : 's'}</div>
+    </div>`;
+  host.classList.add('show');
 }
 
 function initTerminal() {
@@ -3179,6 +3311,7 @@ runBoot().then(() => {
   setTimeout(() => { if (!_aboutNowLive) startAboutNowIdleRotation(); }, 4000);
   initAniList();
   initLastfm();
+  initOnRepeat();
   initTerminal();
   initGuestbook();
   initWebBtns();

@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=100" />
+  <link rel="stylesheet" href="style.css?v=101" />
 </head>
 <body data-discord-id="1480622111339843876">
   <div class="blobs" aria-hidden="true">
@@ -201,6 +201,7 @@
   </svg>
   <div class="comets" id="comets" aria-hidden="true"></div>
   <div class="aurora" aria-hidden="true"></div>
+  <div class="mood-tint" id="moodTint" aria-hidden="true"></div>
   <div class="grain" aria-hidden="true"></div>
   <div id="boot" class="boot">
     <div class="boot-inner">
@@ -368,6 +369,7 @@
       <div class="row-col row-col-full">
         <div class="sec-heading"><span class="sec-dash"></span> recent tracks</div>
         <p class="anime-tag">what's actually been in my ears, pulled live from <a href="https://www.last.fm/user/cailfn" target="_blank" rel="noopener">last.fm</a>.</p>
+        <div class="on-repeat" id="onRepeat"></div>
         <div class="tracks-list" id="tracksList"><div class="tracks-loading">loading...</div></div>
       </div>
     </section>
@@ -581,6 +583,8 @@
     </div>
   </div>
 
-  <script src="cail.js?v=100"></script>
+  <div class="lyric-ticker" id="lyricTicker" aria-hidden="true"></div>
+
+  <script src="cail.js?v=101"></script>
 </body>
 </html>
