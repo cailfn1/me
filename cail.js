@@ -474,76 +474,6 @@ function renderDiscordBadges() {
   });
 }
 
-// Discord-style profile hover card on the avatar
-function initAvatarCard() {
-  const avatar = $('#avatar');
-  const card = $('#avatarCard');
-  if (!avatar || !card) return;
-
-  // render the badge wall into the card
-  const badgeWrap = $('#acBadges');
-  if (badgeWrap) {
-    ALL_BADGES.forEach(b => {
-      const img = document.createElement('img');
-      img.src = `https://cdn.discordapp.com/badge-icons/${b.hash}.png`;
-      img.alt = b.name;
-      img.title = b.name;
-      img.loading = 'lazy';
-      img.onerror = () => img.remove();
-      badgeWrap.appendChild(img);
-    });
-  }
-
-  // "member since" — derived from the Discord snowflake (account creation time)
-  const id = document.body.dataset.discordId;
-  const ms = $('#acMemberSince');
-  if (id && ms) {
-    try {
-      const created = new Date(Number((BigInt(id) >> 22n)) + 1420070400000);
-      ms.textContent = created.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    } catch { ms.textContent = '—'; }
-  }
-
-  // show / hide (card is a child of #avatar, so hovering it keeps #avatar hovered)
-  let hideT = null;
-  const show = () => { clearTimeout(hideT); card.classList.add('show'); };
-  const hide = () => { hideT = setTimeout(() => card.classList.remove('show'), 160); };
-  avatar.addEventListener('mouseenter', show);
-  avatar.addEventListener('mouseleave', hide);
-  card.addEventListener('mouseenter', show);
-  card.addEventListener('mouseleave', hide);
-  if (window.matchMedia('(hover: none)').matches) {
-    avatar.addEventListener('click', () => card.classList.toggle('show'));
-  }
-}
-
-const STATUS_LABEL = { online: 'Online', idle: 'Idle', dnd: 'Do Not Disturb', offline: 'Offline' };
-function updateAvatarCard(data) {
-  const card = $('#avatarCard');
-  if (!card || !data) return;
-  const status = data.discord_status || 'offline';
-  card.dataset.status = status;
-  const st = $('#acStatus'); if (st) st.textContent = STATUS_LABEL[status] || 'Offline';
-  const u = data.discord_user || {};
-  const nm = $('#acName'); if (nm) nm.textContent = u.global_name || u.username || 'cail';
-  const un = $('#acUser'); if (un) un.textContent = '@' + (u.username || 'cail');
-  const act = $('#acActivity'), actLabel = $('#acActivityLabel'), actText = $('#acActivityText');
-  if (data.listening_to_spotify && data.spotify) {
-    if (actLabel) actLabel.textContent = 'listening to spotify';
-    if (actText) actText.textContent = `${data.spotify.song} — ${data.spotify.artist}`;
-    if (act) act.hidden = false;
-  } else {
-    const game = Array.isArray(data.activities) ? data.activities.find(a => a.type === 0) : null;
-    if (game) {
-      if (actLabel) actLabel.textContent = 'playing';
-      if (actText) actText.textContent = game.name;
-      if (act) act.hidden = false;
-    } else if (act) {
-      act.hidden = true;
-    }
-  }
-}
-
 function applyDiscordAvatar(user) {
   if (!user || !user.id || !user.avatar) return;
   const av = $('#avatar');
@@ -551,8 +481,6 @@ function applyDiscordAvatar(user) {
   const ext = user.avatar.startsWith('a_') ? 'gif' : 'png';
   const url = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${ext}?size=256`;
   av.style.backgroundImage = `url('${url}'), linear-gradient(135deg, #2a2d4a, #1a1c2e)`;
-  const acPfp = $('#acPfp');
-  if (acPfp) acPfp.style.backgroundImage = `url('${url}')`;
   const deco = $('#avatarDeco');
   if (deco && user.avatar_decoration_data && user.avatar_decoration_data.asset) {
     deco.src = `https://cdn.discordapp.com/avatar-decoration-presets/${user.avatar_decoration_data.asset}.png?size=240&passthrough=true`;
@@ -942,8 +870,6 @@ function initLanyard() {
     // drive the mood ring + lyric ticker off the live Spotify track
     if (isSpotify) onTrackChange(data.spotify.artist, data.spotify.song);
     else onTrackStop();
-
-    updateAvatarCard(data);
   };
   let ws;
   let heartbeat;
@@ -3349,7 +3275,6 @@ runBoot().then(() => {
   initTaglineRotator();
   initReactiveName();
   renderDiscordBadges();
-  initAvatarCard();
   initMusic();
   initVisitorCounter();
   typeBio();
