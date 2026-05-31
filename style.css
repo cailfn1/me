@@ -1269,6 +1269,34 @@ body.night-mode .star {
   }
 }
 
+/* reactive name: letters drift with the cursor (driven by JS) + shatter-reform on click */
+.hero-name .ink { will-change: transform; }
+@keyframes inkShatter {
+  0%   { transform: translate(0, 0) rotate(0) scale(1);                                   filter: blur(0);   color: var(--text); }
+  22%  { transform: translate(var(--sx, 0), var(--sy, 0)) rotate(var(--sr, 0)) scale(1.16); filter: blur(2px); color: #ff8aab; }
+  100% { transform: translate(0, 0) rotate(0) scale(1);                                   filter: blur(0);   color: var(--text); }
+}
+
+/* typewriter tagline caret */
+.tagline-caret {
+  display: inline-block;
+  width: 7px;
+  height: 1.02em;
+  margin-left: 3px;
+  vertical-align: -2px;
+  background: #ff8aab;
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(180, 30, 70, 0.7);
+  animation: taglineBlink 1.05s steps(1) infinite;
+}
+@keyframes taglineBlink {
+  0%, 50%      { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tagline-caret { animation: none; opacity: 0.85; }
+}
+
 .hero-skills {
   grid-row: 2;
   grid-column: 1 / -1;

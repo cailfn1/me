@@ -74,19 +74,132 @@ function startClock() {
   setInterval(update, 1000);
 }
 
-function setGreeting() {
-  const tagline = $('#tagline');
-  if (!tagline) return;
+// typewriter tagline that cycles through gothic one-liners with a blinking caret.
+// exposed via `taglineRotator` so the avatar easter egg can flash a temp line.
+let taglineRotator = null;
+function initTaglineRotator() {
+  const el = $('#tagline');
+  if (!el) return;
   const h = new Date().getHours();
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
-  let greeting;
-  if (h < 5) greeting = 'late-night gamer';
-  else if (h < 12) greeting = 'good morning ☕';
-  else if (h < 17) greeting = 'afternoon vibes';
-  else if (h < 21) greeting = 'evening hours';
-  else greeting = 'just some guy (night shift)';
-  tagline.textContent = `${greeting} · California`;
-  tagline.dataset.original = greeting;
+  const tod = h < 5  ? 'up past 3am again'
+            : h < 12 ? 'running on too little sleep'
+            : h < 17 ? 'should be doing reps'
+            : h < 21 ? 'winding down, sort of'
+            :          'just some guy (night shift)';
+  const PHRASES = [
+    'just some guy · california',
+    tod,
+    'nocturnal by design',
+    'probably at the gym',
+    'watching anime instead of sleeping',
+    'still figuring out the code thing',
+  ];
+
+  el.textContent = '';
+  const textSpan = document.createElement('span');
+  textSpan.className = 'tagline-text';
+  const caret = document.createElement('span');
+  caret.className = 'tagline-caret';
+  caret.setAttribute('aria-hidden', 'true');
+  el.append(textSpan, caret);
+
+  if (reducedMotion) {
+    textSpan.textContent = PHRASES[0];
+    caret.style.display = 'none';
+    return;
+  }
+
+  let pi = 0, ci = 0, deleting = false, paused = false, hold = 0, timer = null;
+  const set = (s) => { textSpan.textContent = s; };
+  function schedule(ms) { timer = setTimeout(tick, ms); }
+  function tick() {
+    if (paused) { schedule(120); return; }
+    if (hold > performance.now()) { schedule(80); return; }
+    const phrase = PHRASES[pi];
+    if (!deleting) {
+      ci++; set(phrase.slice(0, ci));
+      if (ci >= phrase.length) { deleting = true; hold = performance.now() + 2200; }
+      schedule(deleting ? 0 : 52 + Math.random() * 46);
+    } else {
+      ci--; set(phrase.slice(0, ci));
+      if (ci <= 0) { deleting = false; pi = (pi + 1) % PHRASES.length; hold = performance.now() + 320; }
+      schedule(26 + Math.random() * 20);
+    }
+  }
+  taglineRotator = {
+    // avatar "now offline" easter egg: freeze, show a temp line, then resume typing
+    flash(text, ms) {
+      paused = true;
+      clearTimeout(timer);
+      set(text);
+      setTimeout(() => { ci = 0; deleting = false; hold = 0; paused = false; schedule(200); }, ms);
+    }
+  };
+  schedule(650);
+}
+
+// the hero name reacts to the cursor (letters shove away) and shatters on click
+function initReactiveName() {
+  const name = $('.hero-name');
+  if (!name || reducedMotion) return;
+  const letters = Array.from(name.querySelectorAll('.ink'));
+  if (!letters.length) return;
+
+  const RADIUS = 115;
+  let raf = null, px = -9999, py = -9999, active = false, ready = false;
+
+  // wait for the ink-in load animation to finish, then take over transforms
+  setTimeout(() => {
+    ready = true;
+    letters.forEach(l => {
+      l.style.animation = 'none';                                   // stop inkIn so it can't replay
+      l.style.transition = 'transform 0.34s cubic-bezier(.2,.7,.2,1)';
+    });
+  }, 1150);
+
+  function apply() {
+    raf = null;
+    if (!ready) return;
+    for (const l of letters) {
+      if (l.dataset.shatter === '1') continue;                      // don't fight the shatter anim
+      const r = l.getBoundingClientRect();
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const dx = cx - px, dy = cy - py;
+      const dist = Math.hypot(dx, dy);
+      if (active && dist < RADIUS) {
+        const f = 1 - dist / RADIUS;
+        const ux = dx / (dist || 1), uy = dy / (dist || 1);
+        l.style.transform = `translate(${ux * f * 26}px, ${uy * f * 26}px) rotate(${ux * f * 13}deg)`;
+      } else {
+        l.style.transform = '';
+      }
+    }
+  }
+  window.addEventListener('pointermove', (e) => {
+    px = e.clientX; py = e.clientY; active = true;
+    if (!raf) raf = requestAnimationFrame(apply);
+  }, { passive: true });
+  window.addEventListener('blur', () => { active = false; if (!raf) raf = requestAnimationFrame(apply); });
+
+  name.style.cursor = 'pointer';
+  name.addEventListener('click', () => {
+    letters.forEach(l => {
+      const ang = Math.random() * Math.PI * 2;
+      const mag = 18 + Math.random() * 28;
+      l.style.setProperty('--sx', `${Math.cos(ang) * mag}px`);
+      l.style.setProperty('--sy', `${Math.sin(ang) * mag - 10}px`);
+      l.style.setProperty('--sr', `${(Math.random() * 2 - 1) * 40}deg`);
+      l.dataset.shatter = '1';
+      l.style.animation = 'none';
+      void l.offsetWidth;                                           // restart the animation each click
+      l.style.animation = 'inkShatter 0.5s cubic-bezier(.2,.7,.2,1)';
+    });
+  });
+  letters.forEach(l => {
+    l.addEventListener('animationend', (e) => {
+      if (e.animationName === 'inkShatter') { l.style.animation = 'none'; l.dataset.shatter = '0'; }
+    });
+  });
 }
 const TRACKS = [
   { title: 'see u in hell — papa roach × hanumankind', src: 'assets/see-u-in-hell.mp3' },
@@ -294,12 +407,11 @@ function initAvatarStreak() {
     if (clicks >= 5) {
       clicks = 0;
       avatar.classList.add('offline');
-      const original = tagline.textContent;
-      tagline.textContent = 'now offline';
+      if (taglineRotator) taglineRotator.flash('now offline', 4000);
+      else tagline.textContent = 'now offline';
       clearTimeout(restoreTimer);
       restoreTimer = setTimeout(() => {
         avatar.classList.remove('offline');
-        tagline.textContent = original;
       }, 4000);
     }
   });
@@ -3009,7 +3121,8 @@ initAmbientParticles();
 
 runBoot().then(() => {
   startClock();
-  setGreeting();
+  initTaglineRotator();
+  initReactiveName();
   initMusic();
   initVisitorCounter();
   typeBio();
