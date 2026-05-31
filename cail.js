@@ -1298,12 +1298,14 @@ function onTrackStop() {
 async function initOnRepeat() {
   const host = $('#onRepeat');
   if (!host) return;
-  let top = null;
+  let tracks = [];
   try {
-    const url = `https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${LASTFM_USER}&api_key=${LASTFM_KEY}&period=7day&limit=1&format=json`;
+    const url = `https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${LASTFM_USER}&api_key=${LASTFM_KEY}&period=7day&limit=5&format=json`;
     const res = await fetch(url);
-    if (res.ok) top = (await res.json())?.toptracks?.track?.[0] || null;
-  } catch { top = null; }
+    if (res.ok) tracks = (await res.json())?.toptracks?.track || [];
+  } catch { tracks = []; }
+  if (!Array.isArray(tracks)) tracks = [tracks];      // last.fm returns an object when there's only one
+  const top = tracks[0];
   if (!top) { host.style.display = 'none'; return; }
   const name = top.name || '';
   const artist = top.artist?.name || top.artist?.['#text'] || '';
@@ -1324,20 +1326,31 @@ async function initOnRepeat() {
     const fb = (top.image && top.image.find(i => i.size === 'large')?.['#text']) || '';
     if (fb && !fb.includes(PLACEHOLDER)) art = fb;
   }
+  const rest = tracks.slice(1, 5).map((t, i) => {
+    const nm = mClean(t.name || '');
+    const ar = mClean(t.artist?.name || t.artist?.['#text'] || '');
+    const pl = parseInt(t.playcount || '0', 10);
+    return `<li class="or-row"><span class="or-rank">${i + 2}</span><span class="or-trk"><span class="or-name">${nm}</span> <span class="or-artist">— ${ar}</span></span><span class="or-plays">${pl}</span></li>`;
+  }).join('');
+  const restHtml = rest
+    ? `<div class="on-repeat-rest"><ol class="or-list">${rest}</ol><a class="or-link" href="https://www.last.fm/user/${LASTFM_USER}/library/tracks?date_preset=LAST_7_DAYS" target="_blank" rel="noopener">the week's rotation → last.fm</a></div>`
+    : '';
   host.innerHTML = `
-    <div class="vinyl-frame">
-      <div class="vinyl">
-        ${art ? `<img class="vinyl-label" src="${art}" alt="" />` : `<div class="vinyl-label vinyl-label-empty"></div>`}
-        <div class="vinyl-hole"></div>
+    <div class="on-repeat-hero">
+      <div class="vinyl-frame">
+        <div class="vinyl">
+          ${art ? `<img class="vinyl-label" src="${art}" alt="" />` : `<div class="vinyl-label vinyl-label-empty"></div>`}
+          <div class="vinyl-hole"></div>
+        </div>
+        <div class="vinyl-arm"></div>
       </div>
-      <div class="vinyl-arm"></div>
+      <div class="on-repeat-meta">
+        <div class="on-repeat-kicker">on repeat this week</div>
+        <div class="on-repeat-track">${mClean(name)}</div>
+        <div class="on-repeat-sub">${mClean(artist)} · ${plays} play${plays === 1 ? '' : 's'}</div>
+      </div>
     </div>
-    <div class="on-repeat-meta">
-      <div class="on-repeat-kicker">on repeat this week</div>
-      <div class="on-repeat-track">${mClean(name)}</div>
-      <div class="on-repeat-artist">${mClean(artist)}</div>
-      <div class="on-repeat-plays">${plays} play${plays === 1 ? '' : 's'}</div>
-    </div>`;
+    ${restHtml}`;
   host.classList.add('show');
 }
 
