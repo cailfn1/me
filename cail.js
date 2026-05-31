@@ -447,56 +447,25 @@ const MANUAL_BADGES = [
   { name: 'Completed a Quest', hash: QUEST_BADGE_HASH },
 ];
 
-// retro 88×31 web-buttons (classic neocities/webring collectible look), crimson theme.
-// icon = a unicode glyph rendered in crimson; href optional (pure flair if omitted).
-const BUTTONS_88 = [
-  { icon: '♥',   l1: 'cail',        l2: '.love',       accent: true, href: 'https://cail.love' },
-  { icon: '☾',   l1: 'best viewed', l2: 'in darkness' },
-  { icon: '✦',   l1: 'vampire',     l2: 'hours',       blink: true },
-  { icon: '☾',   l1: 'no sleep',    l2: 'gang' },
-  { icon: '</>', l1: 'hand coded',  l2: 'no a.i.',     href: 'https://github.com/cailfn1/me' },
-  { icon: '▶',   l1: 'certified',   l2: 'weeb',        href: 'https://anilist.co/user/cailfn/' },
-  { icon: '✝',   l1: 'gothic mode', l2: ': on',        blink: true },
-  { icon: '✱',   l1: 'powered by',  l2: 'insomnia' },
-];
-
-function initButtons88() {
-  const wrap = $('#buttons88');
-  if (!wrap) return;
-  wrap.innerHTML = '';
-  BUTTONS_88.forEach(b => {
-    const el = document.createElement(b.href ? 'a' : 'div');
-    el.className = 'btn88' + (b.accent ? ' accent' : '') + ((b.blink && !reducedMotion) ? ' blink' : '');
-    if (b.href) { el.href = b.href; el.target = '_blank'; el.rel = 'noopener'; }
-    const label = `${b.l1} ${b.l2}`.replace(/\s+/g, ' ').trim();
-    el.title = label;
-    el.setAttribute('aria-label', label);
-    const ic = document.createElement('span');
-    ic.className = 'btn88-ic';
-    ic.setAttribute('aria-hidden', 'true');
-    ic.textContent = b.icon;
-    const tx = document.createElement('span');
-    tx.className = 'btn88-tx';
-    const l1 = document.createElement('span'); l1.className = 'btn88-l1'; l1.textContent = b.l1;
-    const l2 = document.createElement('span'); l2.className = 'btn88-l2'; l2.textContent = b.l2;
-    tx.append(l1, l2);
-    el.append(ic, tx);
-    wrap.appendChild(el);
-  });
-}
-
 // custom crimson flair badges — small icon tiles that sit on the same shelf as the
-// live Discord badges. `g` = a monochrome glyph, or `svg` = inline svg markup.
-const DUMBBELL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>';
+// live Discord badges. each is a hand-drawn line-icon (crimson via currentColor).
+const FLAIR_ICONS = {
+  moon:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+  blood:      '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>',
+  dumbbell:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>',
+  headphones: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="2.5" y="14" width="4" height="6" rx="1.2" fill="currentColor" stroke="none"/><rect x="17.5" y="14" width="4" height="6" rx="1.2" fill="currentColor" stroke="none"/></svg>',
+  screen:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M10.5 8.4l4 2.6-4 2.6z" fill="currentColor" stroke="none"/></svg>',
+  code:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg>',
+  coffee:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13v5a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 5.6c.4-.6.4-1.2 0-1.9M12 5.6c.4-.6.4-1.2 0-1.9"/></svg>',
+};
 const FLAIR_BADGES = [
-  { g: '☾',   name: 'nocturnal' },
-  { g: '✦',   name: 'insomniac' },
-  { svg: DUMBBELL_SVG, name: 'gym rat' },
-  { g: '►',   name: 'certified weeb' },
-  { g: '♫',   name: 'headphones always in' },
-  { g: '</>', name: 'hand-coded', tiny: true },
-  { g: '†',   name: 'gothic at heart' },
-  { g: '★',   name: 'est. mmxxvi' },
+  { icon: 'moon',       name: 'nocturnal' },
+  { icon: 'blood',      name: 'bleeds crimson' },
+  { icon: 'dumbbell',   name: 'gym rat' },
+  { icon: 'headphones', name: 'music always on' },
+  { icon: 'screen',     name: 'anime addict' },
+  { icon: 'code',       name: 'hand-coded · no a.i.' },
+  { icon: 'coffee',     name: 'caffeine-powered' },
 ];
 
 function initFlairBadges() {
@@ -505,13 +474,12 @@ function initFlairBadges() {
   wrap.innerHTML = '';
   FLAIR_BADGES.forEach(b => {
     const el = document.createElement('span');
-    el.className = 'fbadge' + (b.tiny ? ' tiny' : '');
+    el.className = 'fbadge';
     el.setAttribute('data-label', b.name);
     el.setAttribute('role', 'img');
     el.setAttribute('aria-label', b.name);
     el.title = b.name;
-    if (b.svg) el.innerHTML = b.svg;
-    else el.textContent = b.g;
+    el.innerHTML = FLAIR_ICONS[b.icon] || '';
     wrap.appendChild(el);
   });
 }
@@ -3197,7 +3165,6 @@ runBoot().then(() => {
   startClock();
   initTaglineRotator();
   initReactiveName();
-  initButtons88();
   initFlairBadges();
   initMusic();
   initVisitorCounter();

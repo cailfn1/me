@@ -3761,8 +3761,7 @@ body.light-chaos {
   text-shadow: 0 0 7px rgba(180, 30, 70, 0.6);
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.2s ease, color 0.16s ease;
 }
-.fbadge svg { width: 13px; height: 13px; display: block; }
-.fbadge.tiny { font-size: 8px; letter-spacing: -0.04em; }   /* for wider glyphs like </> */
+.fbadge svg { width: 14px; height: 14px; display: block; }
 .fbadge:hover {
   transform: translateY(-2px) scale(1.08);
   border-color: rgba(255, 138, 171, 0.7);
@@ -3795,110 +3794,6 @@ body.light-chaos {
 .fbadge:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 @media (prefers-reduced-motion: reduce) {
   .fbadge:hover { transform: none; }
-}
-
-/* ===== retro 88×31 web-buttons (collectible neocities-style flair, crimson) ===== */
-.buttons-88 {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 14px;
-  max-width: 372px;            /* 4 across: 88*4 + 6*3 = 370 */
-}
-.btn88 {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-  width: 88px;
-  height: 31px;
-  overflow: hidden;
-  text-decoration: none;
-  cursor: pointer;
-  background: linear-gradient(180deg, #1a0610 0%, #100309 100%);
-  /* beveled pixel border: light top-left, dark bottom-right */
-  border: 1px solid;
-  border-color: rgba(255, 138, 171, 0.42) rgba(60, 6, 20, 0.95) rgba(60, 6, 20, 0.95) rgba(255, 138, 171, 0.42);
-  box-shadow: inset 1px 1px 0 rgba(255, 170, 195, 0.18), inset -1px -1px 0 rgba(0, 0, 0, 0.55);
-  transition: transform 0.14s ease, box-shadow 0.2s ease, border-color 0.15s ease;
-}
-.btn88-ic {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  flex-shrink: 0;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: #ff8aab;
-  background: rgba(180, 30, 70, 0.16);
-  border-right: 1px solid rgba(180, 30, 70, 0.4);
-  text-shadow: 0 0 6px rgba(180, 30, 70, 0.7);
-}
-.btn88-tx {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1px;
-  padding: 0 4px;
-  min-width: 0;
-  flex: 1;
-}
-.btn88-l1, .btn88-l2 {
-  font-family: 'Silkscreen', 'JetBrains Mono', monospace;
-  font-size: 7px;
-  line-height: 1.05;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.btn88-l1 { color: #ffd9e3; }
-.btn88-l2 { color: rgba(255, 138, 171, 0.72); }
-
-/* diagonal shimmer sweep on hover (same trick as .webbtn) */
-.btn88::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-  transform: translateX(-110%);
-  transition: transform 0.5s ease;
-  pointer-events: none;
-}
-.btn88:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 138, 171, 0.7) rgba(120, 14, 44, 0.95) rgba(120, 14, 44, 0.95) rgba(255, 138, 171, 0.7);
-  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45), 0 0 14px rgba(180, 30, 70, 0.4), inset 1px 1px 0 rgba(255, 170, 195, 0.22);
-}
-.btn88:hover::before { transform: translateX(110%); }
-.btn88:active { transform: translateY(0); }
-
-/* signature cail.love button — brighter crimson fill */
-.btn88.accent { background: linear-gradient(180deg, #c81e46 0%, #8a1538 100%); }
-.btn88.accent .btn88-ic {
-  background: rgba(0, 0, 0, 0.18);
-  color: #ffe6ed;
-  border-right-color: rgba(0, 0, 0, 0.3);
-  text-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
-}
-.btn88.accent .btn88-l1 { color: #fff; }
-.btn88.accent .btn88-l2 { color: rgba(255, 230, 237, 0.85); }
-
-/* "blinkie" pulse for a couple of buttons */
-.btn88.blink { animation: btn88Blink 1.4s ease-in-out infinite; }
-@keyframes btn88Blink {
-  0%, 100% { box-shadow: inset 1px 1px 0 rgba(255, 170, 195, 0.18), inset -1px -1px 0 rgba(0, 0, 0, 0.55), 0 0 0 rgba(180, 30, 70, 0); }
-  50%      { box-shadow: inset 1px 1px 0 rgba(255, 170, 195, 0.22), inset -1px -1px 0 rgba(0, 0, 0, 0.55), 0 0 13px rgba(180, 30, 70, 0.6); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .btn88::before { display: none; }
-  .btn88.blink { animation: none; }
-  .btn88:hover { transform: none; }
-}
-@media (max-width: 540px) {
-  .buttons-88 { max-width: 100%; }
 }
 
 .activity-meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
