@@ -485,6 +485,37 @@ function initButtons88() {
   });
 }
 
+// custom crimson flair badges — small icon tiles that sit on the same shelf as the
+// live Discord badges. `g` = a monochrome glyph, or `svg` = inline svg markup.
+const DUMBBELL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>';
+const FLAIR_BADGES = [
+  { g: '☾',   name: 'nocturnal' },
+  { g: '✦',   name: 'insomniac' },
+  { svg: DUMBBELL_SVG, name: 'gym rat' },
+  { g: '►',   name: 'certified weeb' },
+  { g: '♫',   name: 'headphones always in' },
+  { g: '</>', name: 'hand-coded', tiny: true },
+  { g: '†',   name: 'gothic at heart' },
+  { g: '★',   name: 'est. mmxxvi' },
+];
+
+function initFlairBadges() {
+  const wrap = $('#flairBadges');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  FLAIR_BADGES.forEach(b => {
+    const el = document.createElement('span');
+    el.className = 'fbadge' + (b.tiny ? ' tiny' : '');
+    el.setAttribute('data-label', b.name);
+    el.setAttribute('role', 'img');
+    el.setAttribute('aria-label', b.name);
+    el.title = b.name;
+    if (b.svg) el.innerHTML = b.svg;
+    else el.textContent = b.g;
+    wrap.appendChild(el);
+  });
+}
+
 function renderDiscordBadges(user) {
   const wrap = $('#discordBadges');
   if (!wrap || !user) return;
@@ -3167,6 +3198,7 @@ runBoot().then(() => {
   initTaglineRotator();
   initReactiveName();
   initButtons88();
+  initFlairBadges();
   initMusic();
   initVisitorCounter();
   typeBio();
