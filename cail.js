@@ -474,6 +474,48 @@ function renderDiscordBadges() {
   });
 }
 
+// holographic character card — 3D tilt + crimson holo-foil, flips to lore on click
+function initCharacterCard() {
+  const scene = $('#tcardScene');
+  const card = $('#tcard');
+  const hint = $('#tcardHint');
+  if (!scene || !card) return;
+
+  // flip on click (works for mouse + touch)
+  scene.addEventListener('click', () => card.classList.toggle('flipped'));
+
+  const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (hint && !fine) hint.textContent = 'tap to flip';
+  if (!fine || reducedMotion) return;   // no live tilt/holo on touch or reduced-motion
+
+  const MAX = 16; // max tilt in degrees
+  let raf = null, px = 0.5, py = 0.5, active = false;
+
+  function apply() {
+    raf = null;
+    card.style.setProperty('--rx', ((px - 0.5) * 2 * MAX).toFixed(2) + 'deg');   // rotateY
+    card.style.setProperty('--ry', (-(py - 0.5) * 2 * MAX).toFixed(2) + 'deg');  // rotateX
+    card.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
+    card.style.setProperty('--my', (py * 100).toFixed(1) + '%');
+    card.style.setProperty('--posx', (px * 100).toFixed(1) + '%');
+    card.style.setProperty('--posy', (py * 100).toFixed(1) + '%');
+    card.style.setProperty('--active', active ? '1' : '0');
+  }
+  scene.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return;
+    const r = scene.getBoundingClientRect();
+    px = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    py = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    if (!active) { active = true; card.classList.add('interacting'); }
+    if (!raf) raf = requestAnimationFrame(apply);
+  });
+  scene.addEventListener('pointerleave', () => {
+    card.classList.remove('interacting');   // re-enable transition → smooth snap-back
+    // clear inline vars so it eases back to the CSS resting tilt + foil fades off
+    ['--rx', '--ry', '--mx', '--my', '--posx', '--posy', '--active'].forEach(p => card.style.removeProperty(p));
+  });
+}
+
 function applyDiscordAvatar(user) {
   if (!user || !user.id || !user.avatar) return;
   const av = $('#avatar');
@@ -481,6 +523,8 @@ function applyDiscordAvatar(user) {
   const ext = user.avatar.startsWith('a_') ? 'gif' : 'png';
   const url = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${ext}?size=256`;
   av.style.backgroundImage = `url('${url}'), linear-gradient(135deg, #2a2d4a, #1a1c2e)`;
+  const tp = $('#tcardPortrait');
+  if (tp) tp.style.backgroundImage = `url('${url}')`;
   const deco = $('#avatarDeco');
   if (deco && user.avatar_decoration_data && user.avatar_decoration_data.asset) {
     deco.src = `https://cdn.discordapp.com/avatar-decoration-presets/${user.avatar_decoration_data.asset}.png?size=240&passthrough=true`;
@@ -3275,6 +3319,7 @@ runBoot().then(() => {
   initTaglineRotator();
   initReactiveName();
   renderDiscordBadges();
+  initCharacterCard();
   initMusic();
   initVisitorCounter();
   typeBio();
