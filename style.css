@@ -1551,7 +1551,7 @@ body.night-mode .star {
   border-radius: 16px;
   overflow: hidden;
   background: linear-gradient(160deg, #14080f 0%, #0a050a 60%, #16060e 100%);
-  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(180, 30, 70, 0.35), 0 0 36px rgba(120, 10, 40, 0.3);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(180, 30, 70, 0.3), 0 0 18px rgba(120, 10, 40, 0.16);
 }
 .tcard-back { transform: rotateY(180deg); }
 .tcard-frame {
@@ -1678,8 +1678,8 @@ body.night-mode .star {
   background-size: 300% 300%, 200% 200%;
   background-position: var(--posx, 50%) var(--posy, 50%);
   mix-blend-mode: color-dodge;
-  filter: brightness(0.75) contrast(1.5) saturate(1.35);
-  opacity: var(--active, 0);
+  filter: brightness(0.6) contrast(1.25) saturate(1.15);
+  opacity: calc(var(--active, 0) * 0.45);
   transition: opacity 0.35s ease;
 }
 .tcard-glare {
@@ -1688,9 +1688,9 @@ body.night-mode .star {
   z-index: 3;
   border-radius: 16px;
   pointer-events: none;
-  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.6), rgba(255, 200, 220, 0.14) 30%, transparent 56%);
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.32), rgba(255, 200, 220, 0.08) 28%, transparent 52%);
   mix-blend-mode: overlay;
-  opacity: var(--active, 0);
+  opacity: calc(var(--active, 0) * 0.7);
   transition: opacity 0.35s ease;
 }
 .tcard-hint {
@@ -1701,12 +1701,14 @@ body.night-mode .star {
   color: var(--muted);
   opacity: 0.55;
 }
-@media (max-width: 900px) {
+/* only float in the right void on wide screens with real room; otherwise drop it
+   below the hero text (centered) so it never overlaps the badges / now-playing */
+@media (max-width: 1200px) {
   .tcard-scene {
     position: static;
     transform: none;
-    margin: 30px auto 0;
-    width: clamp(230px, 64vw, 270px);
+    margin: 32px auto 4px;
+    width: clamp(240px, 60vw, 280px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
