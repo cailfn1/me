@@ -80,7 +80,7 @@ body[data-mood='hot']  { --accent: #ff7e5a; --accent-hover: #ff9d80; }
   transition: background-color 2.6s ease, opacity 2.6s ease;
 }
 body[data-mood='cold'] .mood-tint { background-color: #3a5cff; opacity: 0.42; }
-body[data-mood='hot']  .mood-tint { background-color: #ff5a1e; opacity: 0.34; }
+body[data-mood='hot']  .mood-tint { background-color: #ff5a1e; opacity: 0.24; }
 
 /* lyric ticker — one rotating line crawling across the very bottom */
 .lyric-ticker {
@@ -1528,7 +1528,7 @@ body.night-mode .star {
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  transform: rotateX(var(--ry, -7deg)) rotateY(var(--rx, 5deg));
+  transform: rotateX(var(--ry, -4deg)) rotateY(var(--rx, 3deg));
   transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
   will-change: transform;
   cursor: pointer;
@@ -1709,7 +1709,7 @@ body.night-mode .star {
     top: 50%;
     transform: translateY(-50%);
     margin: 0;
-    width: 244px;            /* fixed — must not grow into the text lane */
+    width: 256px;            /* fixed — must not grow into the text lane */
   }
 }
 @media (prefers-reduced-motion: reduce) {
