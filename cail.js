@@ -2421,48 +2421,79 @@ function initCursor() {
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   if (!fine || reducedMotion) return;
 
-  // native CSS cursor handles tracking — JS only spawns ambient trail + click bursts at raw mouse coords
-  let lastTrail = 0;
-  const TRAIL_INTERVAL = 55; // less frequent than before for a cleaner look
+  // spring-lagging ring + tight dot. ring chases the pointer; over interactive
+  // elements it's magnetically pulled toward their centre and swells (.lock).
+  const ring = document.createElement('div'); ring.className = 'cursor-ring';
+  const dot  = document.createElement('div'); dot.className  = 'cursor-dot';
+  document.body.appendChild(ring);
+  document.body.appendChild(dot);
+  document.body.classList.add('cursor-custom');
 
-  function spawnTrail(x, y) {
-    const t = document.createElement('div');
-    t.className = 'cursor-trail';
-    // tiny jitter so the trail isn't a perfectly rigid line
-    const jx = (Math.random() - 0.5) * 4;
-    const jy = (Math.random() - 0.5) * 4;
-    t.style.left = (x + jx) + 'px';
-    t.style.top  = (y + jy) + 'px';
-    const scale = 0.7 + Math.random() * 0.5;
-    t.style.setProperty('--scale', scale);
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 900);
-  }
+  // elements the ring should lock onto
+  const MAG_SEL = 'a, button, .tcard, .dbadge, .webbtn, .skill-icon, .avatar, .mascot, [role="button"], [data-cursor]';
 
-  // cold expanding ring ripple on click — single clean element, no warm particles
-  function spawnClickRipple(x, y) {
-    const r = document.createElement('div');
-    r.className = 'click-ripple';
-    r.style.left = x + 'px';
-    r.style.top = y + 'px';
-    document.body.appendChild(r);
-    setTimeout(() => r.remove(), 600);
-  }
+  let mx = window.innerWidth / 2, my = window.innerHeight / 2; // pointer target
+  let rx = mx, ry = my;                                        // ring (spring)
+  let magnet = null;                                           // hovered magnetic el
 
-  window.addEventListener('mousemove', (e) => {
-    const now = performance.now();
-    if (now - lastTrail > TRAIL_INTERVAL) {
-      spawnTrail(e.clientX, e.clientY);
-      lastTrail = now;
+  window.addEventListener('mousemove', (e) => { mx = e.clientX; my = e.clientY; }, { passive: true });
+
+  document.addEventListener('pointerover', (e) => {
+    const el = e.target.closest && e.target.closest(MAG_SEL);
+    if (el) { magnet = el; ring.classList.add('lock'); }
+  }, { passive: true });
+  document.addEventListener('pointerout', (e) => {
+    const el = e.target.closest && e.target.closest(MAG_SEL);
+    if (el) {
+      const to = e.relatedTarget;
+      if (!to || !to.closest || !to.closest(MAG_SEL)) { magnet = null; ring.classList.remove('lock'); }
     }
   }, { passive: true });
 
-  window.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return; // only left clicks
-    const tag = e.target.tagName;
-    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
-      spawnClickRipple(e.clientX, e.clientY);
+  function loop() {
+    let tx = mx, ty = my;
+    if (magnet && magnet.isConnected) {
+      const r = magnet.getBoundingClientRect();
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      tx = mx + (cx - mx) * 0.35;   // pull 35% toward the element centre
+      ty = my + (cy - my) * 0.35;
+    } else if (magnet) {
+      magnet = null; ring.classList.remove('lock'); // element left the DOM
     }
+    rx += (tx - rx) * 0.2;
+    ry += (ty - ry) * 0.2;
+    ring.style.transform = `translate3d(${rx}px, ${ry}px, 0) translate(-50%, -50%)`;
+    dot.style.transform  = `translate3d(${mx}px, ${my}px, 0) translate(-50%, -50%)`;
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // crimson / ash ember burst on click — particles fly out with an upward bias
+  function burst(x, y) {
+    const N = 12;
+    for (let i = 0; i < N; i++) {
+      const p = document.createElement('div');
+      p.className = Math.random() < 0.35 ? 'ember ash' : 'ember';
+      const ang = (Math.PI * 2 * i) / N + (Math.random() - 0.5) * 0.6;
+      const dist = 16 + Math.random() * 28;
+      const tx = Math.cos(ang) * dist;
+      const ty = Math.sin(ang) * dist - (10 + Math.random() * 16); // rise
+      p.style.left = x + 'px';
+      p.style.top  = y + 'px';
+      p.style.setProperty('--tx', tx.toFixed(1) + 'px');
+      p.style.setProperty('--ty', ty.toFixed(1) + 'px');
+      p.style.setProperty('--d', (480 + Math.random() * 360).toFixed(0) + 'ms');
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 920);
+    }
+  }
+
+  window.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return; // left clicks only
+    ring.classList.add('press');
+    setTimeout(() => ring.classList.remove('press'), 200);
+    const tag = e.target.tagName;
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') burst(e.clientX, e.clientY);
   }, { passive: true });
 }
 
