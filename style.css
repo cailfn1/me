@@ -1512,12 +1512,10 @@ body.night-mode .star {
 
 /* ===== holographic character card (fills the hero right void) ===== */
 .tcard-scene {
-  position: absolute;
-  right: 2%;
-  top: 50%;
-  transform: translateY(-50%);
+  position: static;
+  margin: 26px auto 4px;
   z-index: 2;
-  width: clamp(236px, 22vw, 300px);
+  width: clamp(240px, 70vw, 280px);
   aspect-ratio: 5 / 7;
   perspective: 900px;
   display: flex;
@@ -1701,14 +1699,17 @@ body.night-mode .star {
   color: var(--muted);
   opacity: 0.55;
 }
-/* only float in the right void on wide screens with real room; otherwise drop it
-   below the hero text (centered) so it never overlaps the badges / now-playing */
-@media (max-width: 1200px) {
+/* on wide screens only: float the card in the hero's right void AND reserve a lane
+   for it by capping the hero text width, so it can never cover the badges / now-playing */
+@media (min-width: 1024px) {
+  .hero-text { max-width: 420px; }
   .tcard-scene {
-    position: static;
-    transform: none;
-    margin: 32px auto 4px;
-    width: clamp(240px, 60vw, 280px);
+    position: absolute;
+    right: 1%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    width: 244px;            /* fixed — must not grow into the text lane */
   }
 }
 @media (prefers-reduced-motion: reduce) {
