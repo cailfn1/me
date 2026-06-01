@@ -1562,11 +1562,11 @@ body.night-mode .star {
   .hero-text { max-width: 420px; }
   .tcard-scene {
     position: absolute;
-    right: 1%;
+    right: -12px;            /* nudge into the gutter so it clears the badge row */
     top: 50%;
     transform: translateY(-50%);
     margin: 0;
-    width: 256px;            /* fixed — must not grow into the text lane */
+    width: 248px;            /* fixed — must not grow into the text lane */
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2196,7 +2196,15 @@ body.night-mode .star {
   color: var(--c);
   font-weight: 700;
   width: 18px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.links-list .link-icon svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  display: block;
 }
 
 .links-list .link-platform {
@@ -2408,14 +2416,15 @@ body.night-mode .star {
 .webbtn-title { color: var(--text); font-weight: 600; }
 .webbtn-sub { color: var(--muted); }
 
-.webbtn-vhs  { background: linear-gradient(180deg, #1a1428 0%, #0f0a18 100%); }
-.webbtn-css  { background: linear-gradient(180deg, #0a1c2a 0%, #061018 100%); }
-.webbtn-key  { background: linear-gradient(180deg, #0d2010 0%, #061008 100%); }
-.webbtn-hand { background: linear-gradient(180deg, #0d2010 0%, #061008 100%); }
-.webbtn-sleep{ background: linear-gradient(180deg, #2a1008 0%, #180a04 100%); }
-.webbtn-snake { background: linear-gradient(180deg, #14182a 0%, #0a0e1c 100%); }
+/* unified cold-crimson family — subtle depth variation so tiles stay distinct */
+.webbtn-vhs  { background: linear-gradient(180deg, #1f0e16 0%, #140811 100%); }
+.webbtn-css  { background: linear-gradient(180deg, #1a0d14 0%, #110810 100%); }
+.webbtn-key  { background: linear-gradient(180deg, #220f18 0%, #16090f 100%); }
+.webbtn-hand { background: linear-gradient(180deg, #1a0d14 0%, #110810 100%); }
+.webbtn-sleep{ background: linear-gradient(180deg, #220f18 0%, #16090f 100%); }
+.webbtn-snake { background: linear-gradient(180deg, #1f0e16 0%, #140811 100%); }
 .webbtn-music { background: linear-gradient(180deg, #2a0e1c 0%, #18060f 100%); }
-.webbtn-secret{ background: linear-gradient(180deg, #2a200a 0%, #181204 100%); }
+.webbtn-secret{ background: linear-gradient(180deg, #1a0d14 0%, #110810 100%); }
 
 .site-toast {
   position: fixed;
