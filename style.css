@@ -1310,6 +1310,7 @@ body.night-mode .star {
 }
 
 .hero-name {
+  position: relative;
   font-family: 'Pirata One', 'Instrument Serif', serif;
   font-weight: 400;
   font-size: clamp(3.5rem, 10vw, 7rem);
@@ -4455,4 +4456,76 @@ body.light-chaos {
   background: rgba(90, 80, 100, 0.18);
   color: #a8a4b4;
   border-color: rgba(120, 110, 130, 0.4);
+}
+
+/* ============================================================
+   KILLER ANIMATIONS — bleeding name (K1), eclipse (K3), decrypt (K2)
+   ============================================================ */
+
+/* ----- K1: bleeding hero name — crimson seeps + drips from the letters ----- */
+.blood-drip {
+  position: absolute;
+  width: 3px;
+  height: var(--h, 26px);
+  transform: translate(-50%, 0) scaleY(0);
+  transform-origin: top center;
+  background: linear-gradient(180deg, rgba(160, 20, 50, 0) 0%, rgba(160, 20, 50, 0.5) 35%, #a01a40 75%, #8a1538 100%);
+  border-radius: 0 0 2px 2px;
+  filter: drop-shadow(0 0 4px rgba(180, 30, 70, 0.5));
+  pointer-events: none;
+  z-index: 2;
+  animation: bleed var(--d, 2600ms) cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+}
+.blood-drip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -3px;
+  width: 6px;
+  height: 7px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at 40% 35%, #c81e46 0%, #8a1538 70%);
+  box-shadow: 0 0 6px rgba(180, 30, 70, 0.6);
+}
+@keyframes bleed {
+  0%   { transform: translate(-50%, 0) scaleY(0);      opacity: 0; }
+  16%  { transform: translate(-50%, 0) scaleY(1);      opacity: 1; }
+  44%  { transform: translate(-50%, 0) scaleY(1);      opacity: 1; }
+  100% { transform: translate(-50%, 54px) scaleY(0.85); opacity: 0; }
+}
+
+/* ----- K3: blood-moon eclipse event ----- */
+#eclipseVeil {
+  position: fixed;
+  inset: 0;
+  z-index: -1; /* above .bg-overlay (appended last in DOM), still behind all content */
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at 72% 20%, transparent 0%, transparent 26%, rgba(44, 2, 16, 0.5) 64%, rgba(8, 0, 4, 0.86) 100%);
+  transition: opacity 2.4s ease;
+}
+body.eclipse #eclipseVeil { opacity: 1; }
+.star { transition: filter 1.6s ease; }
+body.eclipse .star { filter: brightness(1.9) drop-shadow(0 0 2px rgba(255, 110, 130, 0.6)); }
+body.eclipse .blood-moon { animation: moonEclipse 7.2s ease-in-out forwards; }
+@keyframes moonEclipse {
+  0% {
+    transform: scale(1); filter: blur(8px) brightness(1);
+    background: radial-gradient(circle at 40% 38%, rgba(255, 90, 110, 0.16) 0%, rgba(180, 30, 60, 0.22) 22%, rgba(120, 14, 36, 0.18) 38%, transparent 58%);
+  }
+  30%, 70% {
+    transform: scale(1.1); filter: blur(6px) brightness(1.5);
+    background: radial-gradient(circle at 40% 38%, rgba(6, 1, 4, 0.72) 0%, rgba(6, 1, 4, 0.6) 16%, rgba(255, 70, 100, 0.6) 28%, rgba(180, 30, 60, 0.42) 40%, transparent 60%);
+  }
+  100% {
+    transform: scale(1); filter: blur(8px) brightness(1);
+    background: radial-gradient(circle at 40% 38%, rgba(255, 90, 110, 0.16) 0%, rgba(180, 30, 60, 0.22) 22%, rgba(120, 14, 36, 0.18) 38%, transparent 58%);
+  }
+}
+
+/* ----- K2: decrypt headings — glyph scramble glows crimson, settles to normal ----- */
+.sec-heading .dec.decoding {
+  color: var(--accent);
+  text-shadow: 0 0 10px rgba(200, 30, 70, 0.55);
 }

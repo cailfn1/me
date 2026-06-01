@@ -3085,6 +3085,135 @@ function initSnake() {
   fetchLeaderboard();
 }
 
+// ===== K1: bleeding hero name — crimson drips seep from the letters =====
+function initBleedName() {
+  const name = $('.hero-name');
+  if (!name || reducedMotion) return;
+  const letters = Array.from(name.querySelectorAll('.ink'));
+  if (!letters.length) return;
+
+  function dripOnce() {
+    const l = letters[Math.floor(Math.random() * letters.length)];
+    const nr = name.getBoundingClientRect();
+    const lr = l.getBoundingClientRect();
+    if (lr.width === 0) return;
+    const x = lr.left - nr.left + lr.width * (0.3 + Math.random() * 0.4);
+    const y = lr.bottom - nr.top - 4;
+    const d = document.createElement('span');
+    d.className = 'blood-drip';
+    d.style.left = x.toFixed(1) + 'px';
+    d.style.top = y.toFixed(1) + 'px';
+    d.style.setProperty('--h', (16 + Math.random() * 26).toFixed(0) + 'px');
+    d.style.setProperty('--d', (2200 + Math.random() * 1400).toFixed(0) + 'ms');
+    name.appendChild(d);
+    setTimeout(() => d.remove(), 4200);
+  }
+
+  function schedule() {
+    setTimeout(() => {
+      if (!document.hidden) dripOnce();
+      schedule();
+    }, 2000 + Math.random() * 2600);
+  }
+  setTimeout(schedule, 1600); // let the ink-in settle first
+}
+
+// ===== K3: blood-moon eclipse event (deep-scroll once, then on long idle) =====
+function initEclipse() {
+  const moon = document.querySelector('.blood-moon');
+  if (!moon || reducedMotion) return;
+
+  const veil = document.createElement('div');
+  veil.id = 'eclipseVeil';
+  veil.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(veil);
+
+  function flash() {
+    const f = $('#thunderFlash'), b = $('#lightning');
+    if (f) { f.classList.remove('active'); void f.offsetWidth; f.classList.add('active'); setTimeout(() => f.classList.remove('active'), 1200); }
+    if (b) { b.classList.remove('active'); void b.offsetWidth; b.classList.add('active'); setTimeout(() => b.classList.remove('active'), 1200); }
+  }
+
+  let eclipsing = false, last = 0;
+  const COOLDOWN = 45000;
+  function run() {
+    const now = Date.now();
+    if (eclipsing || now - last < COOLDOWN) return;
+    eclipsing = true; last = now;
+    document.body.classList.add('eclipse');
+    setTimeout(flash, 1500);
+    setTimeout(flash, 5400);
+    setTimeout(() => { document.body.classList.remove('eclipse'); eclipsing = false; }, 7200);
+  }
+
+  let armed = true;
+  window.addEventListener('scroll', () => {
+    if (!armed) return;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    if (max > 0 && window.scrollY / max > 0.45) { armed = false; run(); }
+  }, { passive: true });
+
+  let idle = null;
+  function resetIdle() { clearTimeout(idle); idle = setTimeout(run, 85000); }
+  ['pointermove', 'keydown', 'scroll', 'click'].forEach(ev => window.addEventListener(ev, resetIdle, { passive: true }));
+  resetIdle();
+}
+
+// ===== K2: decrypt section headings — glyph scramble that decodes into place =====
+function initDecryptHeadings() {
+  if (reducedMotion) return;
+  const GLYPHS = '!<>-_/[]{}=+*#%&|░▒▓█アカサタナミ0123456789';
+  const heads = Array.from(document.querySelectorAll('.sec-heading'));
+  if (!heads.length) return;
+
+  // wrap each non-empty text node in a .dec span (leaves .sec-dash + #gbCount alone)
+  heads.forEach(h => {
+    Array.from(h.childNodes).forEach(node => {
+      if (node.nodeType === 3 && node.textContent.trim()) {
+        const span = document.createElement('span');
+        span.className = 'dec';
+        span.dataset.txt = node.textContent;
+        span.textContent = node.textContent;
+        h.replaceChild(span, node);
+      }
+    });
+  });
+
+  function decode(el) {
+    const text = el.dataset.txt || el.textContent;
+    const q = [];
+    for (let i = 0; i < text.length; i++) {
+      const start = Math.floor(Math.random() * 10);
+      q.push({ c: text[i], start, end: start + 8 + Math.floor(Math.random() * 14), r: '' });
+    }
+    el.classList.add('decoding');
+    let frame = 0;
+    function step() {
+      let out = '', done = 0;
+      for (const o of q) {
+        if (o.c === ' ') { out += ' '; done++; continue; }
+        if (frame >= o.end) { out += o.c; done++; }
+        else { if (!o.r || Math.random() < 0.32) o.r = GLYPHS[Math.floor(Math.random() * GLYPHS.length)]; out += o.r; }
+      }
+      el.textContent = out;
+      frame++;
+      if (done < q.length) requestAnimationFrame(step);
+      else { el.textContent = text; el.classList.remove('decoding'); }
+    }
+    step();
+  }
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll('.dec').forEach(decode);
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.55 });
+  heads.forEach(h => io.observe(h));
+}
+
 // kick off ambient particles ASAP — aurora is pure CSS, no JS needed
 initAmbientParticles();
 
@@ -3092,6 +3221,7 @@ runBoot().then(() => {
   startClock();
   initTaglineRotator();
   initReactiveName();
+  initBleedName();
   renderDiscordBadges();
   initCharacterCard();
   initMusic();
@@ -3117,6 +3247,8 @@ runBoot().then(() => {
   initThunder();
   initCmdK();
   initScrollReveal();
+  initDecryptHeadings();
+  initEclipse();
   initParallax();
   initConstellation();
   initComets();
