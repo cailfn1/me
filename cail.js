@@ -3015,7 +3015,7 @@ function stopRenderLoop() {
 function snakeUpdateHud() {
   const s = snakeState;
   const sc = $('#snakeScore'); if (sc) sc.textContent = s.score;
-  const lv = $('#snakeLevel'); if (lv) lv.textContent = 'lvl ' + s.level;
+  const lv = $('#snakeLevel'); if (lv) lv.textContent = s.level;
   const cb = $('#snakeCombo');
   if (cb) {
     if (s.combo > 1) {

@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=117" />
+  <link rel="stylesheet" href="style.css?v=118" />
 </head>
 <body data-discord-id="1480622111339843876">
   <div class="blobs" aria-hidden="true">
@@ -565,17 +565,22 @@
   <div class="game" id="game" hidden>
     <div class="game-window">
       <div class="game-header">
-        <span class="terminal-dot red"></span>
+        <button class="terminal-dot red" id="gameClose" type="button" aria-label="close game" title="close (esc)"></button>
         <span class="terminal-dot yellow"></span>
         <span class="terminal-dot green"></span>
         <span class="game-title">snake.exe</span>
-        <span class="game-hud">
-          <span class="game-score">score: <span id="snakeScore">0</span></span>
-          <span class="game-level" id="snakeLevel">lvl 1</span>
-          <span class="game-combo" id="snakeCombo" hidden>×2</span>
-        </span>
-        <span class="game-hint">wasd · P pause · esc close</span>
-        <button class="terminal-close" id="gameClose" aria-label="close game" title="close (esc)">×</button>
+        <span class="game-hint">esc</span>
+      </div>
+      <div class="game-hud-bar">
+        <div class="hud-stat hud-score">
+          <span class="hud-label">score</span>
+          <span class="hud-value" id="snakeScore">0</span>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-label">level</span>
+          <span class="hud-value" id="snakeLevel">1</span>
+        </div>
+        <span class="game-combo" id="snakeCombo" hidden>×2</span>
       </div>
       <div class="game-body">
         <canvas id="snakeCanvas" width="400" height="400"></canvas>
@@ -587,6 +592,17 @@
             <button class="game-start" id="gameStart" type="button">start</button>
           </div>
         </div>
+      </div>
+      <div class="game-footer">
+        <div class="powerup-legend" aria-label="pickups">
+          <span class="pu-item"><i class="pu-dot" style="--c:#ff5878">♥</i>food</span>
+          <span class="pu-item"><i class="pu-dot" style="--c:#ffd166">●</i>apple</span>
+          <span class="pu-item"><i class="pu-dot" style="--c:#ff5ea8">×2</i>double</span>
+          <span class="pu-item"><i class="pu-dot" style="--c:#7ad7ff">~</i>slow</span>
+          <span class="pu-item"><i class="pu-dot" style="--c:#d8dce4">☠</i>shrink</span>
+          <span class="pu-item"><i class="pu-dot" style="--c:#b98cff">◇</i>phase</span>
+        </div>
+        <div class="game-controls">wasd / arrows · <kbd>P</kbd> pause · <kbd>esc</kbd> close</div>
       </div>
     </div>
   </div>
@@ -613,6 +629,6 @@
 
   <div class="lyric-ticker" id="lyricTicker" aria-hidden="true"></div>
 
-  <script src="cail.js?v=117"></script>
+  <script src="cail.js?v=118"></script>
 </body>
 </html>
