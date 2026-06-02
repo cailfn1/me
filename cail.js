@@ -2665,8 +2665,17 @@ const snakeState = {
   phaseUntil: 0,
   slowSkip: false,
   flash: 0,
+  best: 0,
+  mode: 'classic',     // classic | wrap | hardcore
+  counting: false,     // mid 3·2·1 countdown
+  countdown: null,     // current countdown glyph or null
+  countdownAt: 0,
   ctx: null,
 };
+
+const LS_BEST = 'cails-bio:snake-best';
+function loadBest() { try { return parseInt(localStorage.getItem(LS_BEST) || '0', 10) || 0; } catch { return 0; } }
+function saveBest(n) { try { localStorage.setItem(LS_BEST, String(n)); } catch {} }
 
 // local cache (offline fallback for the global board)
 function loadLeaderboardLocal() {
@@ -2982,6 +2991,24 @@ function snakeDraw() {
     ctx.textBaseline = 'alphabetic';
   }
 
+  // 3·2·1 countdown — big centered glyph that scales + fades in
+  if (s.countdown) {
+    const p = Math.min(1, (performance.now() - s.countdownAt) / 680);
+    const isGo = s.countdown === 'go';
+    ctx.globalAlpha = 1 - p * 0.12;
+    ctx.fillStyle = isGo ? '#ff8aab' : '#ffe3ec';
+    ctx.shadowColor = '#ff2d5e';
+    ctx.shadowBlur = 26;
+    ctx.font = `700 ${Math.round(cell * (isGo ? 3 : 4.2) * (0.72 + p * 0.28))}px 'Pirata One', 'Instrument Serif', serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s.countdown, w / 2, w / 2);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'alphabetic';
+  }
+
   ctx.restore();
 }
 
@@ -3015,6 +3042,7 @@ function stopRenderLoop() {
 function snakeUpdateHud() {
   const s = snakeState;
   const sc = $('#snakeScore'); if (sc) sc.textContent = s.score;
+  const bs = $('#snakeBest'); if (bs) bs.textContent = s.best || 0;
   const lv = $('#snakeLevel'); if (lv) lv.textContent = s.level;
   const cb = $('#snakeCombo');
   if (cb) {
@@ -3050,6 +3078,12 @@ function snakeStep() {
 
   s.dir = s.nextDir;
   const head = { x: s.snake[0].x + s.dir.x, y: s.snake[0].y + s.dir.y };
+
+  // wrap mode — head tunnels to the opposite edge instead of dying at walls
+  if (s.mode === 'wrap') {
+    head.x = (head.x + SNAKE_GRID) % SNAKE_GRID;
+    head.y = (head.y + SNAKE_GRID) % SNAKE_GRID;
+  }
 
   // wall / self collision — exclude the tail cell (it vacates this tick).
   // 'phase' power-up lets the head pass through the body (walls still kill).
@@ -3111,7 +3145,7 @@ function snakeStart() {
   s.dir = { x: 1, y: 0 };
   s.nextDir = { x: 1, y: 0 };
   s.score = 0;
-  s.tick = SNAKE_TICK;
+  s.tick = (s.mode === 'hardcore') ? 78 : SNAKE_TICK;
   s.bonus = null;
   s.particles = [];
   s.combo = 1;
@@ -3126,11 +3160,35 @@ function snakeStart() {
   s.flash = 0;
   snakeRandomFood();
   snakeUpdateHud();
-  s.running = true;
   $('#gameOverlay').hidden = true;
+  const modes = $('#gameModes'); if (modes) modes.hidden = true;
   clearInterval(s.loop);
-  s.loop = setInterval(snakeStep, s.tick);
   startRenderLoop();
+  // 3·2·1 countdown, then the loop kicks in
+  s.running = false;
+  s.counting = true;
+  snakeCountdown(() => {
+    s.counting = false;
+    s.running = true;
+    clearInterval(s.loop);
+    s.loop = setInterval(snakeStep, s.tick);
+  });
+}
+
+// 3 · 2 · 1 · go — drawn on the canvas, then fires done()
+function snakeCountdown(done) {
+  const s = snakeState;
+  const seq = ['3', '2', '1', 'go'];
+  let i = 0;
+  const show = () => {
+    s.countdown = seq[i];
+    s.countdownAt = performance.now();
+    beep(i < 3 ? 440 : 720, 0.09, 'square', 0.05);
+    i++;
+    if (i < seq.length) setTimeout(show, 680);
+    else setTimeout(() => { s.countdown = null; done(); }, 560);
+  };
+  show();
 }
 
 function snakeGameOver() {
@@ -3152,7 +3210,10 @@ function snakeGameOver() {
     const initials = $('#snakeInitials');
     const startBtn = $('#gameStart');
 
-    title.textContent = `game over — ${s.score}`;
+    const newBest = s.score > 0 && s.score > (s.best || 0);
+    if (newBest) { s.best = s.score; saveBest(s.best); snakeUpdateHud(); }
+    title.textContent = newBest ? `new best — ${s.score}` : `game over — ${s.score}`;
+    title.classList.toggle('newbest', newBest);
     startBtn.hidden = false;
 
     if (s.score > 0) {
@@ -3176,12 +3237,15 @@ function openGame() {
   g.hidden = false;
   const overlay = $('#gameOverlay');
   $('#gameOverlayTitle').textContent = 'ready?';
-  $('#gameOverlaySub').textContent = 'arrows / wasd · gold apple = bonus · P to pause';
+  $('#gameOverlayTitle').classList.remove('newbest');
+  $('#gameOverlaySub').textContent = 'swipe or arrows / wasd · grab the power-ups · P to pause';
   $('#snakeInitials').hidden = true;
+  const modes = $('#gameModes'); if (modes) modes.hidden = false;
   $('#gameStart').textContent = 'start';
   overlay.hidden = false;
   // reset HUD
   snakeState.score = 0; snakeState.level = 1; snakeState.combo = 1;
+  snakeState.best = loadBest();
   snakeUpdateHud();
   // size the canvas based on layout (keeps it crisp on hi-dpi)
   const canvas = $('#snakeCanvas');
@@ -3209,7 +3273,44 @@ function initSnake() {
   if (playBtn) playBtn.addEventListener('click', openGame);
   if (closeBtn) closeBtn.addEventListener('click', closeGame);
 
+  // game mode picker (classic / wrap / hardcore)
+  document.querySelectorAll('#gameModes .mode-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      snakeState.mode = b.dataset.mode;
+      document.querySelectorAll('#gameModes .mode-btn').forEach(x => x.classList.toggle('active', x === b));
+    });
+  });
+
+  // mobile: swipe to steer, tap to start/restart
+  const gcanvas = $('#snakeCanvas');
+  if (gcanvas) {
+    let ts = null;
+    gcanvas.addEventListener('touchstart', (e) => { const t = e.touches[0]; ts = { x: t.clientX, y: t.clientY }; }, { passive: true });
+    gcanvas.addEventListener('touchmove', (e) => { if (snakeState.running) e.preventDefault(); }, { passive: false });
+    gcanvas.addEventListener('touchend', (e) => {
+      if (!ts) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - ts.x, dy = t.clientY - ts.y;
+      ts = null;
+      if (Math.abs(dx) < 20 && Math.abs(dy) < 20) { // tap
+        if (!snakeState.running && !snakeState.counting) startBtn.click();
+        return;
+      }
+      const d = snakeState.dir;
+      let nd = null;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0 && d.x !== -1) nd = { x: 1, y: 0 };
+        else if (dx < 0 && d.x !== 1) nd = { x: -1, y: 0 };
+      } else {
+        if (dy > 0 && d.y !== -1) nd = { x: 0, y: 1 };
+        else if (dy < 0 && d.y !== 1) nd = { x: 0, y: -1 };
+      }
+      if (nd) snakeState.nextDir = nd;
+    }, { passive: true });
+  }
+
   startBtn.addEventListener('click', () => {
+    if (snakeState.counting) return;
     if (!initials.hidden && initials.value.trim()) {
       submitScore(initials.value.trim(), snakeState.score);
     }
@@ -3259,7 +3360,7 @@ function initSnake() {
     }
 
     // start / restart with space
-    if ((e.key === ' ' || e.code === 'Space') && !snakeState.running &&
+    if ((e.key === ' ' || e.code === 'Space') && !snakeState.running && !snakeState.counting &&
         e.target !== initials) {
       e.preventDefault();
       startBtn.click();

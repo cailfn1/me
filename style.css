@@ -2920,6 +2920,34 @@ body.light-chaos {
 }
 .game-start[hidden] { display: none !important; }
 
+/* new personal-best — title goes gold */
+.game-overlay-title.newbest {
+  color: #ffd166;
+  text-shadow: 0 0 24px rgba(255, 200, 90, 0.8);
+}
+
+/* game mode picker on the ready screen */
+.game-modes { display: inline-flex; gap: 6px; }
+.game-modes[hidden] { display: none !important; }
+.mode-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 4px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.mode-btn:hover { color: var(--text); border-color: rgba(255, 138, 171, 0.4); }
+.mode-btn.active {
+  background: rgba(180, 30, 70, 0.28);
+  color: #ffd9e3;
+  border-color: rgba(255, 138, 171, 0.6);
+}
+
 .music-title-row {
   display: flex;
   align-items: center;

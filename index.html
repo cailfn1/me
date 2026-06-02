@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=118" />
+  <link rel="stylesheet" href="style.css?v=119" />
 </head>
 <body data-discord-id="1480622111339843876">
   <div class="blobs" aria-hidden="true">
@@ -580,6 +580,10 @@
           <span class="hud-label">level</span>
           <span class="hud-value" id="snakeLevel">1</span>
         </div>
+        <div class="hud-stat">
+          <span class="hud-label">best</span>
+          <span class="hud-value" id="snakeBest">0</span>
+        </div>
         <span class="game-combo" id="snakeCombo" hidden>×2</span>
       </div>
       <div class="game-body">
@@ -588,6 +592,11 @@
           <div class="game-overlay-inner">
             <div class="game-overlay-title" id="gameOverlayTitle">ready?</div>
             <div class="game-overlay-sub" id="gameOverlaySub">press space or click start</div>
+            <div class="game-modes" id="gameModes">
+              <button class="mode-btn active" type="button" data-mode="classic">classic</button>
+              <button class="mode-btn" type="button" data-mode="wrap">wrap</button>
+              <button class="mode-btn" type="button" data-mode="hardcore">hardcore</button>
+            </div>
             <input id="snakeInitials" type="text" maxlength="12" placeholder="your name" autocomplete="off" hidden />
             <button class="game-start" id="gameStart" type="button">start</button>
           </div>
@@ -602,7 +611,7 @@
           <span class="pu-item"><i class="pu-dot" style="--c:#d8dce4">☠</i>shrink</span>
           <span class="pu-item"><i class="pu-dot" style="--c:#b98cff">◇</i>phase</span>
         </div>
-        <div class="game-controls">wasd / arrows · <kbd>P</kbd> pause · <kbd>esc</kbd> close</div>
+        <div class="game-controls">swipe / wasd / arrows · <kbd>P</kbd> pause · <kbd>esc</kbd> close</div>
       </div>
     </div>
   </div>
@@ -629,6 +638,6 @@
 
   <div class="lyric-ticker" id="lyricTicker" aria-hidden="true"></div>
 
-  <script src="cail.js?v=118"></script>
+  <script src="cail.js?v=119"></script>
 </body>
 </html>
