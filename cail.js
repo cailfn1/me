@@ -2623,6 +2623,24 @@ const BONUS_CHANCE = 0.012;  // per-tick chance to spawn a golden apple
 const BONUS_POINTS = 5;
 const COMBO_WINDOW = 2600;   // ms within which consecutive eats keep the combo
 
+// power-up pickups — the old golden apple is now type 'gold'; rest are timed effects
+const POWERUPS = {
+  gold:   { color: '#ffd166', glow: '#ffb300', glyph: '',   weight: 42 }, // +points (apple)
+  x2:     { color: '#ff5ea8', glow: '#ff2d8e', glyph: '×2', weight: 15 }, // double points
+  slow:   { color: '#7ad7ff', glow: '#2aa8ff', glyph: '~',  weight: 15 }, // slow time
+  shrink: { color: '#d8dce4', glow: '#9aa3b2', glyph: '☠',  weight: 14 }, // halve length
+  phase:  { color: '#b98cff', glow: '#8a4fff', glyph: '◇',  weight: 14 }, // pass through self
+};
+const SLOW_MS = 5000, X2_MS = 6000, PHASE_MS = 4000;
+
+function pickPowerup() {
+  const total = Object.values(POWERUPS).reduce((a, p) => a + p.weight, 0);
+  let r = Math.random() * total;
+  for (const k in POWERUPS) { if ((r -= POWERUPS[k].weight) < 0) return k; }
+  return 'gold';
+}
+function snakeScoreMult() { return performance.now() < snakeState.x2Until ? 2 : 1; }
+
 const snakeState = {
   running: false,
   paused: false,
@@ -2642,6 +2660,11 @@ const snakeState = {
   cell: 20,
   shake: 0,
   pulse: 0,
+  slowUntil: 0,
+  x2Until: 0,
+  phaseUntil: 0,
+  slowSkip: false,
+  flash: 0,
   ctx: null,
 };
 
@@ -2667,10 +2690,12 @@ function renderLeaderboard(entries, highlightIdx = -1) {
     list.appendChild(li);
     return;
   }
+  const owner = typeof gbIsOwner === 'function' && gbIsOwner();
   entries.slice(0, 10).forEach((e, i) => {
     const li = document.createElement('li');
     if (i === highlightIdx) li.classList.add('you');
-    li.innerHTML = `<span class="lb-name">${escapeHtml(e.n)}</span><span class="lb-score">${e.s}</span>`;
+    const del = (owner && e.ts) ? `<button class="lb-del" data-ts="${e.ts}" aria-label="delete score" title="delete score">✕</button>` : '';
+    li.innerHTML = `<span class="lb-name">${escapeHtml(e.n)}</span><span class="lb-score">${e.s}</span>${del}`;
     list.appendChild(li);
   });
 }
@@ -2713,13 +2738,14 @@ async function submitScore(name, score) {
       return;
     }
   } catch {}
-  // offline fallback: update local cache only
+  // offline fallback: update local cache only (best-per-name, same as the server)
   const entries = loadLeaderboardLocal();
-  entries.push({ n: cleanName, s: score });
-  entries.sort((a, b) => b.s - a.s);
-  const trimmed = entries.slice(0, 10);
+  entries.push({ n: cleanName, s: score, ts: Date.now() });
+  const bestMap = new Map();
+  for (const x of entries) { const k = (x.n || '').toLowerCase(); const c = bestMap.get(k); if (!c || x.s > c.s) bestMap.set(k, x); }
+  const trimmed = [...bestMap.values()].sort((a, b) => b.s - a.s).slice(0, 10);
   saveLeaderboardLocal(trimmed);
-  renderLeaderboard(trimmed, trimmed.findIndex(e => e.n === cleanName && e.s === score));
+  renderLeaderboard(trimmed, trimmed.findIndex(e => (e.n || '').toLowerCase() === cleanName.toLowerCase()));
 }
 
 function snakeFreeCell() {
@@ -2742,7 +2768,26 @@ function snakeRandomFood() {
 
 function spawnBonus() {
   const cell = snakeFreeCell();
-  snakeState.bonus = { x: cell.x, y: cell.y, ttl: BONUS_TTL };
+  snakeState.bonus = { x: cell.x, y: cell.y, ttl: BONUS_TTL, type: pickPowerup() };
+}
+
+// apply a collected power-up's effect
+function applyPowerup(type, now) {
+  const s = snakeState;
+  switch (type) {
+    case 'gold':   s.score += BONUS_POINTS * s.combo * snakeScoreMult(); break;
+    case 'x2':     s.x2Until = now + X2_MS; s.score += 2 * s.combo; break;
+    case 'slow':   s.slowUntil = now + SLOW_MS; s.score += 2 * s.combo; break;
+    case 'phase':  s.phaseUntil = now + PHASE_MS; s.score += 2 * s.combo; break;
+    case 'shrink': {
+      const keep = Math.max(3, Math.ceil(s.snake.length / 2));
+      const cut = s.snake.splice(keep);           // lop off the back half
+      const t = cut[0] || s.snake[s.snake.length - 1];
+      if (t) snakeBurst(t.x, t.y, '#d8dce4', 16);
+      s.score += 2 * s.combo;
+      break;
+    }
+  }
 }
 
 // burst of particles at a grid cell (canvas-space)
@@ -2777,6 +2822,20 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+// small filled heart centred at (cx, cy), half-width ~size
+function drawHeart(ctx, cx, cy, size, color, glow) {
+  ctx.save();
+  ctx.fillStyle = color;
+  if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 12; }
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + size * 0.32);
+  ctx.bezierCurveTo(cx + size, cy - size * 0.55, cx + size * 0.5, cy - size, cx, cy - size * 0.32);
+  ctx.bezierCurveTo(cx - size * 0.5, cy - size, cx - size, cy - size * 0.55, cx, cy + size * 0.32);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
 function snakeDraw() {
   const s = snakeState;
   const { ctx, cell, snake, food, bonus } = s;
@@ -2805,41 +2864,48 @@ function snakeDraw() {
   // pulse factor (0..1) shared by food + bonus
   const pulse = 0.5 + 0.5 * Math.sin(s.pulse);
 
-  // food — pulsing crimson glow dot
-  {
-    const pad = 3 - pulse * 1.2;
-    ctx.fillStyle = '#ff5878';
-    ctx.shadowColor = '#ff2d5e';
-    ctx.shadowBlur = 10 + pulse * 10;
-    roundRectPath(ctx, food.x * cell + pad, food.y * cell + pad, cell - pad * 2, cell - pad * 2, 4);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-  }
+  // food — pulsing crimson heart
+  drawHeart(ctx, food.x * cell + cell / 2, food.y * cell + cell / 2, cell * 0.3 + pulse * 1.6, '#ff5878', '#ff2d5e');
 
-  // bonus — golden apple with a TTL ring
+  // power-up — colored pickup with a TTL ring + glyph (gold stays an apple)
   if (bonus) {
+    const pu = POWERUPS[bonus.type] || POWERUPS.gold;
     const bx = bonus.x * cell + cell / 2;
     const by = bonus.y * cell + cell / 2;
     const rad = cell / 2 - 2;
-    // ttl ring
+    // ttl ring (drains as it's about to vanish)
     const frac = Math.max(0, bonus.ttl / BONUS_TTL);
-    ctx.strokeStyle = 'rgba(255, 210, 120, 0.55)';
+    ctx.strokeStyle = pu.glow;
+    ctx.globalAlpha = 0.55;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(bx, by, rad + 2, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
     ctx.stroke();
-    // apple
-    ctx.fillStyle = '#ffd166';
-    ctx.shadowColor = '#ffb300';
+    ctx.globalAlpha = 1;
+    // disc
+    ctx.fillStyle = pu.color;
+    ctx.shadowColor = pu.glow;
     ctx.shadowBlur = 12 + pulse * 12;
     ctx.beginPath();
     ctx.arc(bx, by, rad - 1.5 + pulse * 1.2, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
+    // glyph
+    if (pu.glyph) {
+      ctx.fillStyle = '#1a0510';
+      ctx.font = `bold ${Math.round(cell * (pu.glyph.length > 1 ? 0.42 : 0.62))}px 'JetBrains Mono', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pu.glyph, bx, by + 0.5);
+      ctx.textAlign = 'start';
+    }
   }
 
-  // snake — head bright frost-pink → body gradient to deep crimson
+  // snake — head bright frost-pink → body gradient to deep crimson.
+  // goes semi-transparent while the 'phase' power-up is active.
   const n = snake.length;
+  const snakePhasing = performance.now() < s.phaseUntil;
+  if (snakePhasing) ctx.globalAlpha = 0.5;
   snake.forEach((seg, i) => {
     const isHead = i === 0;
     const t = n <= 1 ? 0 : i / n; // 0 head → ~1 tail
@@ -2874,6 +2940,7 @@ function snakeDraw() {
       ctx.fill();
     }
   });
+  if (snakePhasing) ctx.globalAlpha = 1;
 
   // particles (canvas-space, smooth via rAF)
   for (const p of s.particles) {
@@ -2886,6 +2953,35 @@ function snakeDraw() {
   }
   ctx.globalAlpha = 1;
 
+  // combo flash — crimson wash on big combos
+  if (s.flash > 0.02) {
+    ctx.fillStyle = `rgba(255, 45, 94, ${s.flash * 0.16})`;
+    ctx.fillRect(-8, -8, w + 16, w + 16);
+  }
+
+  // active power-up badges, top-left
+  const tnow = performance.now();
+  const badges = [];
+  if (tnow < s.x2Until)    badges.push(['×2', '#ff5ea8', s.x2Until]);
+  if (tnow < s.slowUntil)  badges.push(['slow', '#7ad7ff', s.slowUntil]);
+  if (tnow < s.phaseUntil) badges.push(['phase', '#b98cff', s.phaseUntil]);
+  if (badges.length) {
+    ctx.font = "bold 10px 'JetBrains Mono', monospace";
+    ctx.textBaseline = 'middle';
+    let bx = 6;
+    for (const [label, color, until] of badges) {
+      const secs = Math.max(1, Math.ceil((until - tnow) / 1000));
+      const txt = `${label} ${secs}`;
+      const bw = ctx.measureText(txt).width + 10;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+      roundRectPath(ctx, bx, 6, bw, 16, 4); ctx.fill();
+      ctx.fillStyle = color;
+      ctx.fillText(txt, bx + 5, 15);
+      bx += bw + 5;
+    }
+    ctx.textBaseline = 'alphabetic';
+  }
+
   ctx.restore();
 }
 
@@ -2894,6 +2990,7 @@ function snakeRenderLoop() {
   const s = snakeState;
   s.pulse += 0.12;
   if (s.shake > 0) s.shake *= 0.86;
+  if (s.flash > 0.01) s.flash *= 0.9; else s.flash = 0;
   // advance particles
   for (const p of s.particles) {
     p.x += p.vx;
@@ -2944,13 +3041,21 @@ function snakeSpeedUp() {
 function snakeStep() {
   const s = snakeState;
   if (s.paused) return;
+
+  // 'slow' power-up — advance only every other tick while active
+  if (performance.now() < s.slowUntil) {
+    s.slowSkip = !s.slowSkip;
+    if (s.slowSkip) return;
+  }
+
   s.dir = s.nextDir;
   const head = { x: s.snake[0].x + s.dir.x, y: s.snake[0].y + s.dir.y };
 
-  // wall / self collision — exclude the tail cell (it vacates this tick, so the
-  // head may legally follow directly behind it)
+  // wall / self collision — exclude the tail cell (it vacates this tick).
+  // 'phase' power-up lets the head pass through the body (walls still kill).
   const body = s.snake;
-  const hitsSelf = body.some((seg, i) => i !== body.length - 1 && seg.x === head.x && seg.y === head.y);
+  const phasing = performance.now() < s.phaseUntil;
+  const hitsSelf = !phasing && body.some((seg, i) => i !== body.length - 1 && seg.x === head.x && seg.y === head.y);
   if (head.x < 0 || head.x >= SNAKE_GRID || head.y < 0 || head.y >= SNAKE_GRID || hitsSelf) {
     snakeGameOver();
     return;
@@ -2963,14 +3068,16 @@ function snakeStep() {
 
   let ate = false;
 
-  // golden apple
+  // power-up pickup (gold / x2 / slow / shrink / phase)
   if (s.bonus && head.x === s.bonus.x && head.y === s.bonus.y) {
     const now = performance.now();
     s.combo = (now - s.lastEat <= COMBO_WINDOW) ? s.combo + 1 : 1;
     s.lastEat = now;
-    s.score += BONUS_POINTS * s.combo;
-    snakeBurst(s.bonus.x, s.bonus.y, '#ffd166', 22);
+    const pu = POWERUPS[s.bonus.type] || POWERUPS.gold;
+    applyPowerup(s.bonus.type, now);
+    snakeBurst(s.bonus.x, s.bonus.y, pu.color, 22);
     beep(1040, 0.08, 'square', 0.06);
+    if (s.combo >= 4) s.flash = 1;
     s.bonus = null;
     ate = true;
   }
@@ -2980,9 +3087,10 @@ function snakeStep() {
     const now = performance.now();
     s.combo = (now - s.lastEat <= COMBO_WINDOW) ? s.combo + 1 : 1;
     s.lastEat = now;
-    s.score += s.combo;
+    s.score += s.combo * snakeScoreMult();
     snakeBurst(s.food.x, s.food.y, '#ff5878', 14);
     beep(660 + Math.min(s.score, 40) * 10, 0.05, 'square', 0.05);
+    if (s.combo >= 4) s.flash = 1;
     snakeRandomFood();
     snakeSpeedUp();
     ate = true;
@@ -3011,6 +3119,11 @@ function snakeStart() {
   s.lastEat = 0;
   s.shake = 0;
   s.paused = false;
+  s.slowUntil = 0;
+  s.x2Until = 0;
+  s.phaseUntil = 0;
+  s.slowSkip = false;
+  s.flash = 0;
   snakeRandomFood();
   snakeUpdateHud();
   s.running = true;
@@ -3192,6 +3305,30 @@ function initSnake() {
           if (typeof showToast === 'function') showToast('leaderboard cleared');
           fetchLeaderboard();
         }
+      } catch {
+        if (typeof showToast === 'function') showToast('network error — try again');
+      }
+    });
+  }
+
+  // owner-only: delete a single score via the ✕ on each row
+  const lbList = $('#lbList');
+  if (lbList) {
+    lbList.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.lb-del');
+      if (!btn) return;
+      const ts = btn.dataset.ts;
+      if (!ts) return;
+      try {
+        const res = await fetch(LB_API + '?key=' + encodeURIComponent(gbAdminKey()) + '&ts=' + encodeURIComponent(ts), { method: 'DELETE' });
+        if (res.status === 401) {
+          try { localStorage.removeItem(GB_ADMIN_LS); } catch {}
+          if (typeof showToast === 'function') showToast('wrong admin key — owner mode off');
+          refreshLbOwner();
+          return;
+        }
+        const data = await res.json();
+        if (data.ok) fetchLeaderboard();
       } catch {
         if (typeof showToast === 'function') showToast('network error — try again');
       }

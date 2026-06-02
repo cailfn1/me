@@ -35,6 +35,18 @@ function clean(str, max) {
   return String(str == null ? '' : str).replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
+// collapse a score list to one entry per player (case-insensitive name), keeping
+// each player's highest score; sorted best-first (ties broken by earliest ts)
+function dedupBest(scores) {
+  const best = new Map();
+  for (const x of scores) {
+    const k = (x.n || '').toLowerCase();
+    const cur = best.get(k);
+    if (!cur || x.s > cur.s) best.set(k, x);
+  }
+  return [...best.values()].sort((a, b) => b.s - a.s || a.ts - b.ts);
+}
+
 function hasBanned(text) {
   const low = text.toLowerCase();
   return BANNED.some(w => low.includes(w));
@@ -169,7 +181,11 @@ async function handleApi(request, env, url) {
     const raw = await env.GUESTBOOK.get(LB_KEY);
     let scores = [];
     try { scores = raw ? JSON.parse(raw) : []; } catch { scores = []; }
-    return json({ ok: true, scores: scores.slice(0, 10) });
+    const deduped = dedupBest(scores);
+    if (deduped.length !== scores.length) {
+      await env.GUESTBOOK.put(LB_KEY, JSON.stringify(deduped)); // permanently clean lurking dupes
+    }
+    return json({ ok: true, scores: deduped.slice(0, 10) });
   }
 
   // POST /api/leaderboard → submit a snake score { name, score }
@@ -189,10 +205,9 @@ async function handleApi(request, env, url) {
     try { scores = raw ? JSON.parse(raw) : []; } catch { scores = []; }
     const entry = { n: name, s: score, ts: Date.now() };
     scores.push(entry);
-    scores.sort((a, b) => b.s - a.s || a.ts - b.ts);
-    scores = scores.slice(0, LB_MAX);
+    scores = dedupBest(scores).slice(0, LB_MAX); // one row per player, best kept
     await env.GUESTBOOK.put(LB_KEY, JSON.stringify(scores));
-    const rank = scores.findIndex(x => x.ts === entry.ts && x.n === name && x.s === score);
+    const rank = scores.findIndex(x => (x.n || '').toLowerCase() === name.toLowerCase());
     return json({ ok: true, scores: scores.slice(0, 10), rank });
   }
 
