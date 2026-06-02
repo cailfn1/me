@@ -3881,6 +3881,26 @@ body.light-chaos {
 .t-accent { color: var(--accent); }
 .t-host { color: #ff9db9; }
 
+/* neofetch readout */
+.nf-art {
+  color: var(--accent);
+  display: inline-block;
+  width: 19ch;
+  white-space: pre;
+  vertical-align: top;
+  text-shadow: 0 0 8px rgba(180, 30, 70, 0.5);
+}
+.nf-head { color: var(--accent); font-weight: 700; }
+.nf-key { color: #ff9db9; font-weight: 600; }
+.nf-val { color: #d7d7de; }
+.nf-dim { color: #6b6b78; }
+.nf-sw {
+  display: inline-block;
+  width: 14px;
+  height: 11px;
+  vertical-align: middle;
+}
+
 .terminal-input-line {
   display: flex;
   align-items: center;

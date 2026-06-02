@@ -731,8 +731,10 @@ const TERM_COMMANDS = {
     '  help       — this list',
     '  about      — short bio',
     '  whoami     — who am i',
+    '  neofetch   — system info',
     '  ls         — list files',
     '  pwd        — working dir',
+    '  cat <file> — print a file',
     '  skills     — list skills',
     '  projects   — list projects',
     '  links      — show socials',
@@ -745,6 +747,17 @@ const TERM_COMMANDS = {
   whoami: () => ['cail'],
   ls: () => ['about.md   skills.txt   projects/   links.txt   cail.sh*'],
   pwd: () => ['/home/cail/cail.love'],
+  neofetch: () => { renderNeofetch(); return null; },
+  cat: (arg) => {
+    const files = {
+      'about.md': $('#bioText')?.getAttribute('data-text') || 'cail.',
+      'links.txt': [...$$('.links-list a')].map(a => `${a.querySelector('.link-platform')?.textContent.trim() || ''}: ${a.href}`).join('\n'),
+      'cail.sh': '#!/bin/zsh\n# hand-coded in the dark — no framework, no build step.\nexec ./vibes --crimson --nocturnal',
+    };
+    if (!arg) return ['usage: cat <file> — try about.md'];
+    if (files[arg] != null) return String(files[arg]).split('\n');
+    return [`cat: ${arg}: no such file or directory`];
+  },
   skills: () => ['skills: ' + [...$$('.skill-icon')].map(p => p.getAttribute('title') || p.dataset.label).filter(Boolean).join(', ')],
   projects: () => [...$$('.work-card')].map(p => {
     const name = p.querySelector('.work-name')?.textContent || '?';
@@ -796,8 +809,45 @@ function runCommand(raw) {
     termPrint(`unknown command: ${escapeHtml(cmd)} — try <span class="term-cmd">help</span>`, 'error');
     return;
   }
-  const out = fn();
+  const out = fn(arg, rest);
   if (out) out.forEach(l => termPrint(escapeHtml(l)));
+}
+
+// neofetch-style readout — crimson skull ASCII + system info (prints rich HTML itself)
+function renderNeofetch() {
+  const s = Math.floor(performance.now() / 1000);
+  const uptime = s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+  const kv = (k, v) => `<span class="nf-key">${k}</span><span class="nf-dim">:</span> <span class="nf-val">${v}</span>`;
+  const art = [
+    '      ______      ',
+    "    .'      '.    ",
+    '   /  .--.   \\    ',
+    '  |  ( oo )  |    ',
+    '  |   .__.   |    ',
+    '   \\  ====  /     ',
+    "    '.____.'      ",
+    '      | || |      ',
+    '                  ',
+    '                  ',
+  ];
+  const info = [
+    '<span class="nf-head">cail</span><span class="nf-dim">@</span><span class="nf-head">bio</span>',
+    '<span class="nf-dim">----------------</span>',
+    kv('os', 'cail.love (web)'),
+    kv('host', 'gothic-crimson v1.0'),
+    kv('kernel', 'vanilla-js 6.14'),
+    kv('uptime', uptime),
+    kv('shell', 'cail.sh · zsh'),
+    kv('wm', 'blood-moon'),
+    kv('theme', 'cold-crimson [dark]'),
+    kv('cpu', 'caffeine ×∞'),
+  ];
+  const n = Math.max(art.length, info.length);
+  for (let i = 0; i < n; i++) {
+    termPrint(`<span class="nf-art">${art[i] || '                  '}</span>${info[i] || ''}`);
+  }
+  const sw = ['#3a0d1c', '#8a1538', '#a01a40', '#c81e46', '#ff5a72', '#ff8aab', '#ffd9e3', '#d8dce4'];
+  termPrint('<span class="nf-art"> </span>' + sw.map(c => `<span class="nf-sw" style="background:${c}"></span>`).join(''));
 }
 
 let termHistory = [];
@@ -1179,6 +1229,22 @@ function initTerminal() {
     if (e.key === 'Escape') {
       e.preventDefault();
       closeTerminal();
+      return;
+    }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const val = input.value.trim();
+      if (val && !val.includes(' ')) {
+        const names = Object.keys(TERM_COMMANDS).concat('echo');
+        const matches = names.filter(n => n.startsWith(val));
+        if (matches.length === 1) {
+          input.value = matches[0] + ' ';
+          sizeInput();
+        } else if (matches.length > 1) {
+          termPrint(`<span class="pl">${plSegs('~')}</span> <span class="term-caret">❯</span> ${escapeHtml(val)}`, 'cmd-echo');
+          termPrint(matches.join('   '));
+        }
+      }
       return;
     }
     if (e.key === 'Enter') {
