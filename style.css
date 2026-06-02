@@ -1082,7 +1082,7 @@ body.night-mode .star {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px;
+  padding: 24px;
   transition: opacity 0.5s ease;
   cursor: default;
 }
@@ -1096,68 +1096,30 @@ body.night-mode .star {
   cursor: pointer;
 }
 
-.boot-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  opacity: 0;
-  animation: bootFadeIn 0.7s ease 0.1s forwards;
+/* boot loader reuses the .terminal-window chrome, sized to its streamed log */
+.boot-window {
+  max-width: 600px;
+  height: auto;
+  min-height: 280px;
+  max-height: 80vh;
+  animation: bootWinIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes bootWinIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
 }
 
-@keyframes bootFadeIn {
-  to { opacity: 1; }
+.boot-log {
+  min-height: 236px;
+  font-size: 13px;
 }
+.boot-log .term-line { margin: 1.5px 0; }
 
-.boot-name {
-  font-family: 'Pirata One', 'Instrument Serif', serif;
-  font-weight: 400;
-  font-size: clamp(3.5rem, 9vw, 5.5rem);
-  letter-spacing: 0.01em;
-  line-height: 1;
-  color: var(--text);
-  text-shadow:
-    0 0 18px rgba(180, 30, 70, 0.55),
-    0 0 38px rgba(120, 10, 40, 0.4),
-    0 4px 30px rgba(0, 0, 0, 0.6);
-  margin: 0;
-}
-
-.boot-status {
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--muted);
-  font-size: 12px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  margin: 0;
-  display: inline-flex;
-  align-items: center;
-}
-
-.boot-dots::after {
-  content: "";
-  display: inline-block;
-  width: 1.5em;
-  text-align: left;
-  animation: bootDots 1.4s steps(4) infinite;
-}
-
-@keyframes bootDots {
-  0%   { content: ""; }
-  25%  { content: "."; }
-  50%  { content: ".."; }
-  75%  { content: "..."; }
-  100% { content: ""; }
-}
-
-.boot.clickable .boot-status {
-  color: var(--text);
-  animation: bootPulse 1.8s ease-in-out infinite;
-}
-
-@keyframes bootPulse {
-  0%, 100% { opacity: 0.55; }
-  50%      { opacity: 1; }
+/* trailing blinking block cursor used by the boot stream + await prompt */
+.boot-cursor::after {
+  content: "█";
+  color: var(--accent);
+  animation: termBlink 1.05s steps(1, end) infinite;
 }
 
 .container {
@@ -3795,54 +3757,57 @@ body.light-chaos {
 
 .terminal-window {
   width: 100%;
-  max-width: 640px;
-  height: 420px;
-  max-height: 70vh;
-  background: #07070a;
-  border: 1px solid #2a2a32;
-  border-radius: 8px;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+  max-width: 660px;
+  height: 440px;
+  max-height: 72vh;
+  background: #0b0b0f;
+  border: 1px solid #26262f;
+  border-radius: 9px;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .terminal-header {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 12px;
-  background: #101015;
-  border-bottom: 1px solid #1c1c22;
+  gap: 8px;
+  padding: 9px 12px;
+  background: linear-gradient(180deg, #1b1b22 0%, #141419 100%);
+  border-bottom: 1px solid #000;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .terminal-dot {
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
+  padding: 0;
+  border: 0;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.4);
 }
 
-.terminal-dot.red { background: #ff5f56; }
+.terminal-dot.red { background: #ff5f56; cursor: pointer; position: relative; }
 .terminal-dot.yellow { background: #ffbd2e; }
 .terminal-dot.green { background: #27c93f; }
-
-.terminal-title {
-  margin-left: 8px;
-  font-size: 11px;
-  color: var(--muted);
-  flex: 1;
-}
-
-.terminal-hint {
+/* authentic macOS: red dot reveals × on header hover */
+.terminal-dot.red::after {
+  content: "×";
+  position: absolute;
+  inset: 0;
   font-size: 10px;
-  color: var(--muted);
-  padding: 2px 6px;
-  border: 1px solid #2a2a32;
-  border-radius: 4px;
-  letter-spacing: 0.4px;
-  flex-shrink: 0;
+  line-height: 12px;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transition: opacity 0.12s ease;
 }
+.terminal-header:hover .terminal-dot.red::after { opacity: 1; }
 
+/* boxy close button — still used by the snake (#game) modal header */
 .terminal-close {
   background: #1c1c22;
   border: 1px solid #2a2a32;
@@ -3861,60 +3826,142 @@ body.light-chaos {
   flex-shrink: 0;
   transition: background 0.15s ease, color 0.15s ease;
 }
-
 .terminal-close:hover {
   background: var(--red);
   color: #fff;
   border-color: var(--red);
 }
 
+.terminal-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11px;
+  color: #8a8a96;
+  letter-spacing: 0.3px;
+  pointer-events: none;
+}
+
+.terminal-hint {
+  margin-left: auto;
+  position: relative;
+  z-index: 1;
+  font-size: 10px;
+  color: #5a5a66;
+  padding: 1px 6px;
+  border: 1px solid #2a2a33;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+  flex-shrink: 0;
+}
+
 .terminal-body {
   flex: 1;
-  padding: 12px 14px;
+  padding: 14px 16px;
   font-size: 13px;
+  line-height: 1.55;
   overflow-y: auto;
-  color: var(--text);
+  color: #d7d7de;
+  background: linear-gradient(180deg, #0b0b0f, #08080b);
 }
 
 .term-line {
-  margin: 2px 0;
+  margin: 1px 0;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.term-line.cmd-echo {
-  color: var(--muted);
-}
+.term-line.error { color: #ff6b6b; }
+.term-cmd { color: var(--accent); }
 
-.term-line.error {
-  color: var(--red);
-}
-
-.term-cmd {
-  color: var(--accent);
-}
+/* ANSI-ish output colors */
+.t-ok { color: #2fd24a; }
+.t-dim { color: #6b6b78; }
+.t-accent { color: var(--accent); }
+.t-host { color: #ff9db9; }
 
 .terminal-input-line {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-top: 1px solid #1c1c22;
+  padding: 9px 14px;
+  border-top: 1px solid #000;
+  background: linear-gradient(180deg, #0c0c11, #0a0a0e);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-.term-prompt {
+/* ===== powerline prompt (CSS-drawn arrows — no Nerd Font needed) ===== */
+.pl {
+  display: inline-flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 11.5px;
+}
+.pl-seg {
+  --sb: #333;
+  background: var(--sb);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px 2px 11px;
+  position: relative;
+}
+.pl-seg::after {
+  content: "";
+  position: absolute;
+  left: 100%;
+  top: 0;
+  bottom: 0;
+  width: 0.6em;
+  background: var(--sb);
+  clip-path: polygon(0 0, 0 100%, 100% 50%);
+  z-index: 1;
+}
+.pl-seg.s-user { --sb: #8a1538; color: #ffe3ec; font-weight: 700; }
+.pl-seg.s-path { --sb: #43101f; color: #ff9db9; }
+.pl-seg.s-git  { --sb: #1d0d14; color: #6fce7e; }
+
+.term-caret {
   color: var(--accent);
+  font-weight: 700;
+  margin: 0 7px 0 9px;
+  flex-shrink: 0;
+}
+
+.term-input-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  flex: 1;
+  min-width: 0;
 }
 
 #termInput {
-  flex: 1;
   background: transparent;
   border: none;
   outline: none;
-  color: var(--text);
+  color: #e6e6ec;
   font-family: inherit;
   font-size: 13px;
-  caret-color: var(--accent);
+  caret-color: transparent;
+  padding: 0;
+  max-width: 100%;
+}
+
+/* blinking block cursor — only while the terminal is focused */
+.term-cursor {
+  color: var(--accent);
+  margin-left: 1px;
+  line-height: 1;
+  opacity: 0;
+}
+#terminal:focus-within .term-cursor {
+  animation: termBlink 1.05s steps(1, end) infinite;
+}
+@keyframes termBlink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
 }
 
 .ambient-particle {

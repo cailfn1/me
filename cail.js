@@ -3,61 +3,95 @@ const $$ = (sel) => document.querySelectorAll(sel);
 const pad = (n, size = 2) => n.toString().padStart(size, '0');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const BOOT_MANTRAS = [
-  'opening the door',
-  'writing your name',
-  'counting petals',
-  'summoning the dusk',
-  'waking the cat',
-  'lighting the moon',
+// ===== powerline prompt (CSS-drawn arrows — shared by boot loader + terminal) =====
+function plSegs(path = '~') {
+  return '<span class="pl-seg s-user">cail@bio</span>' +
+         '<span class="pl-seg s-path">' + escapeHtml(path) + '</span>' +
+         '<span class="pl-seg s-git">main ✓</span>';
+}
+function powerlinePrompt(path = '~/cail.love') {
+  return '<span class="pl">' + plSegs(path) + '</span>';
+}
+
+// technical launch log streamed by the boot loader — [time, text, status]
+const BOOT_SEQ = [
+  ['0.00s', 'cail.sh v1.0.0', null],
+  ['0.03s', 'init   bootstrapping cail.love .......', 'ok'],
+  ['0.06s', 'load   fonts · assets ...............', 'ok'],
+  ['0.09s', 'net    discord presence .............', 'ok'],
+  ['0.12s', 'net    last.fm scrobbler ............', 'ok'],
+  ['0.16s', 'gfx    starfield · fog · blood moon .', 'ok'],
+  ['0.19s', 'gfx    renderer .....................', 'ok'],
+  ['0.24s', 'ready in 0.24s', null],
 ];
 
 function runBoot() {
   const bootEl = $('#boot');
-  const status = $('#bootStatus');
+  const log = $('#bootLog');
   const isFirstVisit = sessionStorage.getItem('cails-bio:booted') !== '1';
-  const minWait = isFirstVisit ? 2200 : 900;
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-  // pick a random gothic mantra for this load
-  if (status) {
-    const mantra = BOOT_MANTRAS[Math.floor(Math.random() * BOOT_MANTRAS.length)];
-    status.innerHTML = mantra + '<span class="boot-dots"></span>';
-  }
+  const addLine = (html, cls = '') => {
+    const d = document.createElement('div');
+    d.className = 'term-line' + (cls ? ' ' + cls : '');
+    d.innerHTML = html;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+    return d;
+  };
+  const logLine = ([t, text, st]) =>
+    `<span class="t-dim">[${t}]</span> ${text}` + (st ? ` <span class="t-ok">${st}</span>` : '');
 
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
+    const finish = (gesture) => {
+      sessionStorage.setItem('cails-bio:booted', '1');
+      try { if (gesture && typeof getCtx === 'function') getCtx(); } catch {}
+      bootEl.classList.add('fade');
+      setTimeout(() => { bootEl.remove(); resolve(); }, 500);
+    };
+
+    // reduced motion: drop the whole log in at once and fade fast
     if (reducedMotion) {
+      addLine(powerlinePrompt() + ' <span class="term-caret">❯</span> ./cail.sh');
+      BOOT_SEQ.forEach(row => addLine(logLine(row)));
       sessionStorage.setItem('cails-bio:booted', '1');
       bootEl.classList.add('fade');
-      setTimeout(() => { bootEl.remove(); resolve(); }, 200);
+      setTimeout(() => { bootEl.remove(); resolve(); }, 220);
       return;
     }
 
-    setTimeout(() => {
-      if (isFirstVisit) {
-        status.innerHTML = 'click anywhere to continue';
-        bootEl.classList.add('clickable');
+    // 1) type the launch command
+    const cmdLine = addLine(powerlinePrompt() + ' <span class="term-caret">❯</span> <span class="boot-cmd"></span><span class="boot-cursor"></span>');
+    const cmdSpan = cmdLine.querySelector('.boot-cmd');
+    const cmdText = './cail.sh';
+    for (let i = 0; i < cmdText.length; i++) { cmdSpan.textContent += cmdText[i]; await sleep(34); }
+    cmdLine.querySelector('.boot-cursor')?.classList.remove('boot-cursor');
+    await sleep(230);
 
-        const onEnter = (e) => {
-          if (e.type === 'keydown' && (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta')) return;
-          bootEl.removeEventListener('click', onEnter);
-          window.removeEventListener('keydown', onEnter);
-          sessionStorage.setItem('cails-bio:booted', '1');
-          try {
-            if (typeof getCtx === 'function') getCtx();
-          } catch {}
+    // 2) stream the boot log
+    for (const row of BOOT_SEQ) {
+      addLine(logLine(row));
+      await sleep(90 + Math.random() * 70);
+    }
+    await sleep(260);
 
-          bootEl.classList.add('fade');
-          setTimeout(() => { bootEl.remove(); resolve(); }, 500);
-        };
-
-        bootEl.addEventListener('click', onEnter);
-        window.addEventListener('keydown', onEnter);
-      } else {
-        sessionStorage.setItem('cails-bio:booted', '1');
-        bootEl.classList.add('fade');
-        setTimeout(() => { bootEl.remove(); resolve(); }, 500);
-      }
-    }, minWait);
+    // 3) hand off — first visit waits for a gesture (unlocks audio), repeat auto-launches
+    if (isFirstVisit) {
+      addLine(powerlinePrompt() + ' <span class="term-caret">❯</span> <span class="t-dim">press ⏎ to launch</span> <span class="boot-cursor"></span>');
+      bootEl.classList.add('clickable');
+      const onEnter = (e) => {
+        if (e.type === 'keydown' && ['Shift', 'Control', 'Alt', 'Meta', 'Tab'].includes(e.key)) return;
+        bootEl.removeEventListener('click', onEnter);
+        window.removeEventListener('keydown', onEnter);
+        finish(true);
+      };
+      bootEl.addEventListener('click', onEnter);
+      window.addEventListener('keydown', onEnter);
+    } else {
+      addLine('<span class="t-accent">launching interface…</span>');
+      await sleep(420);
+      finish(false);
+    }
   });
 }
 
@@ -697,6 +731,8 @@ const TERM_COMMANDS = {
     '  help       — this list',
     '  about      — short bio',
     '  whoami     — who am i',
+    '  ls         — list files',
+    '  pwd        — working dir',
     '  skills     — list skills',
     '  projects   — list projects',
     '  links      — show socials',
@@ -707,6 +743,8 @@ const TERM_COMMANDS = {
   ],
   about: () => [$('#bioText').getAttribute('data-text') || ''],
   whoami: () => ['cail'],
+  ls: () => ['about.md   skills.txt   projects/   links.txt   cail.sh*'],
+  pwd: () => ['/home/cail/cail.love'],
   skills: () => ['skills: ' + [...$$('.skill-icon')].map(p => p.getAttribute('title') || p.dataset.label).filter(Boolean).join(', ')],
   projects: () => [...$$('.work-card')].map(p => {
     const name = p.querySelector('.work-name')?.textContent || '?';
@@ -739,7 +777,7 @@ function escapeHtml(s) {
 function runCommand(raw) {
   const input = raw.trim();
   if (!input) return;
-  termPrint(`<span class="term-prompt">$</span> ${escapeHtml(input)}`, 'cmd-echo');
+  termPrint(`<span class="pl">${plSegs('~')}</span> <span class="term-caret">❯</span> ${escapeHtml(input)}`, 'cmd-echo');
 
   const [cmd, ...rest] = input.split(/\s+/);
   const arg = rest.join(' ');
@@ -1109,6 +1147,17 @@ function initTerminal() {
   const input = $('#termInput');
   const closeBtn = $('#termClose');
 
+  // live powerline prompt + startup banner
+  const promptEl = $('#termPrompt');
+  if (promptEl) promptEl.innerHTML = plSegs('~');
+  if ($('#termBody') && !$('#termBody').children.length) {
+    termPrint('<span class="t-accent">cail.sh</span> <span class="t-dim">— zsh — type</span> <span class="term-cmd">help</span> <span class="t-dim">for commands</span>');
+  }
+  // grow the input to its content width so the block cursor sits right after the text
+  const sizeInput = () => { input.size = Math.min(60, Math.max(1, input.value.length + 1)); };
+  sizeInput();
+  input.addEventListener('input', sizeInput);
+
   const isTypingTarget = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA');
 
   window.addEventListener('keydown', (e) => {
@@ -1157,6 +1206,7 @@ function initTerminal() {
         input.value = '';
       }
     }
+    sizeInput();
   });
 }
 

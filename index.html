@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=114" />
+  <link rel="stylesheet" href="style.css?v=115" />
 </head>
 <body data-discord-id="1480622111339843876">
   <div class="blobs" aria-hidden="true">
@@ -204,9 +204,14 @@
   <div class="mood-tint" id="moodTint" aria-hidden="true"></div>
   <div class="grain" aria-hidden="true"></div>
   <div id="boot" class="boot">
-    <div class="boot-inner">
-      <h1 class="boot-name">cail.</h1>
-      <p class="boot-status" id="bootStatus">loading<span class="boot-dots"></span></p>
+    <div class="terminal-window boot-window">
+      <div class="terminal-header">
+        <span class="terminal-dot red"></span>
+        <span class="terminal-dot yellow"></span>
+        <span class="terminal-dot green"></span>
+        <span class="terminal-title">cail@bio — -zsh — 80×24</span>
+      </div>
+      <div class="terminal-body boot-log" id="bootLog"></div>
     </div>
   </div>
   <div class="scanlines" aria-hidden="true"></div>
@@ -588,25 +593,26 @@
   <div class="terminal" id="terminal" hidden>
     <div class="terminal-window">
       <div class="terminal-header">
-        <span class="terminal-dot red"></span>
+        <button class="terminal-dot red" id="termClose" type="button" aria-label="close terminal" title="close (esc)"></button>
         <span class="terminal-dot yellow"></span>
         <span class="terminal-dot green"></span>
-        <span class="terminal-title">cail@bio ~ %</span>
-        <span class="terminal-hint">esc to close</span>
-        <button class="terminal-close" id="termClose" aria-label="close terminal" title="close (esc)">×</button>
+        <span class="terminal-title">cail@bio — -zsh — 80×24</span>
+        <span class="terminal-hint">esc</span>
       </div>
-      <div class="terminal-body" id="termBody">
-        <div class="term-line">cail.sh — type <span class="term-cmd">help</span> for commands</div>
-      </div>
+      <div class="terminal-body" id="termBody"></div>
       <div class="terminal-input-line">
-        <span class="term-prompt">$</span>
-        <input id="termInput" type="text" autocomplete="off" spellcheck="false" />
+        <span class="pl" id="termPrompt" aria-hidden="true"></span>
+        <span class="term-caret">❯</span>
+        <span class="term-input-wrap">
+          <input id="termInput" type="text" autocomplete="off" spellcheck="false" size="1" aria-label="terminal input" />
+          <span class="term-cursor" aria-hidden="true">█</span>
+        </span>
       </div>
     </div>
   </div>
 
   <div class="lyric-ticker" id="lyricTicker" aria-hidden="true"></div>
 
-  <script src="cail.js?v=114"></script>
+  <script src="cail.js?v=115"></script>
 </body>
 </html>
