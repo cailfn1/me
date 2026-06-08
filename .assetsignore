@@ -1,0 +1,9 @@
+# files that live in the repo but should NOT be served from cail.love
+CLAUDE.md
+worker.js
+wrangler.jsonc
+.assetsignore
+.gitignore
+.gitattributes
+README.md
+*.original.md

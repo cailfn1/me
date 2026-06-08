@@ -3,6 +3,22 @@ const $$ = (sel) => document.querySelectorAll(sel);
 const pad = (n, size = 2) => n.toString().padStart(size, '0');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// pause animation + snake loop while tab hidden — saves battery, lets browser sleep rAF cleanly
+document.addEventListener('visibilitychange', () => {
+  document.body.classList.toggle('tab-hidden', document.hidden);
+  // freeze the snake step interval while hidden, resume at the configured tick on focus
+  try {
+    if (typeof snakeState !== 'undefined' && snakeState.running) {
+      if (document.hidden) {
+        clearInterval(snakeState.loop);
+        snakeState.loop = null;
+      } else if (!snakeState.loop && !snakeState.paused && !snakeState.counting) {
+        snakeState.loop = setInterval(snakeStep, snakeState.tick);
+      }
+    }
+  } catch {}
+});
+
 // ===== powerline prompt (CSS-drawn arrows — shared by boot loader + terminal) =====
 function plSegs(path = '~') {
   return '<span class="pl-seg s-user">cail@bio</span>' +
@@ -943,11 +959,13 @@ function renderAniList(entries) {
     a.href = url;
     a.target = '_blank';
     a.rel = 'noopener';
+    const safeTitle = title.replace(/[<>"]/g, '');
     a.innerHTML = `
-      <div class="anime-cover" style="background-image: url('${cover}')">
+      <div class="anime-cover">
+        <img src="${cover}" alt="${safeTitle} cover" loading="lazy" decoding="async" />
         <span class="anime-score anime-score-${tier}">${score}<span class="anime-score-max">/10</span></span>
       </div>
-      <div class="anime-title">${title.replace(/[<>]/g, '')}</div>
+      <div class="anime-title">${safeTitle}</div>
     `;
     grid.appendChild(a);
   });
