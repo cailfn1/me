@@ -1,0 +1,12 @@
+# cail.love
+User-agent: *
+Allow: /
+
+# block dev / config files from being indexed
+Disallow: /CLAUDE.md
+Disallow: /worker.js
+Disallow: /wrangler.jsonc
+Disallow: /og-generator
+Disallow: /api/
+
+Sitemap: https://cail.love/sitemap.xml
