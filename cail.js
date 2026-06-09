@@ -33,18 +33,18 @@ function powerlinePrompt(path = '~/cail.love') {
 // boot log rows: [time, category|null, label, status|null]
 // category drives the color class (.cat-init/.cat-load/.cat-net/.cat-gfx/.cat-auth/.cat-mood/.cat-omen)
 const BOOT_SEQ = [
-  ['0.00s', null,   'cail.sh v1.0.0',                           null],
-  ['0.03s', 'init', 'bootstrapping cail.love .......',          'ok'],
-  ['0.06s', 'load', 'fonts · assets ................',          'ok'],
-  ['0.09s', 'net',  'discord presence ..............',          'err'],   // dramatic fake fail
-  ['0.10s', 'net',  'retry (1/3) ..................',           'ok'],
-  ['0.12s', 'net',  'last.fm scrobbler .............',          'ok'],
-  ['0.14s', 'auth', 'blood oath ....................',          'bound'], // flavor
-  ['0.16s', 'gfx',  'starfield · fog · blood moon ..',          'ok'],
-  ['0.18s', 'mood', 'crimson protocol ..............',          'engaged'], // flavor
-  ['0.19s', 'gfx',  'renderer ......................',          'ok'],
-  ['0.21s', 'omen', 'blood moon rising .............',          'visible'], // flavor
-  ['0.24s', null,   'ready in 0.24s',                            null],
+  ['0.00s', null,   'cail.sh v1.0.0',                null],
+  ['0.03s', 'init', 'bootstrapping cail.love',       'ok'],
+  ['0.06s', 'load', 'fonts · assets',                'ok'],
+  ['0.09s', 'net',  'discord presence',              'err'],   // dramatic fake fail
+  ['0.10s', 'net',  'retry (1/3)',                   'ok'],
+  ['0.12s', 'net',  'last.fm scrobbler',             'ok'],
+  ['0.14s', 'auth', 'blood oath',                    'bound'], // flavor
+  ['0.16s', 'gfx',  'starfield · fog · blood moon',  'ok'],
+  ['0.18s', 'mood', 'crimson protocol',              'engaged'], // flavor
+  ['0.19s', 'gfx',  'renderer',                      'ok'],
+  ['0.21s', 'omen', 'blood moon rising',             'visible'], // flavor
+  ['0.24s', null,   'ready in 0.24s',                null],
 ];
 
 // ascii cail. logo — sits above the log, glows crimson
@@ -71,16 +71,87 @@ function runBoot() {
   };
   // status -> color class: ok/bound/engaged/visible = green; err = red; else default
   const statusCls = (st) => st === 'err' ? 't-err' : (st ? 't-ok' : '');
+  const catTag = (cat) => cat ? `<span class="cat cat-${cat}">${cat.padEnd(4)}</span> ` : '     ';
   const logLine = ([t, cat, text, st]) => {
     const cls = statusCls(st);
-    const tag = cat ? `<span class="cat cat-${cat}">${cat.padEnd(4)}</span> ` : '     ';
-    return `<span class="t-dim">[${t}]</span> ${tag}${text}` + (st ? ` <span class="${cls}">${st}</span>` : '');
+    return `<span class="t-dim">[${t}]</span> ${catTag(cat)}${text}` + (st ? ` <span class="${cls}">${st}</span>` : '');
   };
+  // hex PID for fake "process" feel (4 chars): [pid 4f2a]
+  const fakePid = () => '0x' + Math.floor(Math.random() * 0xffff).toString(16).padStart(4, '0');
+  // live progress bar — 14 cells filled to `pct` (0..1)
+  const BAR_CELLS = 14;
+  const renderBar = (pct, cls = 't-ok') => {
+    const fill = Math.max(0, Math.min(BAR_CELLS, Math.round(pct * BAR_CELLS)));
+    const filled = '█'.repeat(fill);
+    const empty  = '░'.repeat(BAR_CELLS - fill);
+    return `<span class="boot-bar"><span class="${cls}">${filled}</span><span class="t-dim">${empty}</span></span>`;
+  };
+  // strip trailing dots/spaces from a label so it fits next to a live bar
+  const stripDots = (s) => s.replace(/[.\s]+$/, '');
+  // bar line during animation: [time] cat [pid xxxx] label [bar] N%
+  const barLine = ([t, cat, text, st], pct, pid) => {
+    const cls = st === 'err' ? 't-err' : 't-ok';
+    const label = stripDots(text);
+    const pidTag = pid ? `<span class="t-dim">[${pid}]</span> ` : '';
+    const pctTxt = (Math.floor(pct * 100)).toString().padStart(3, ' ') + '%';
+    return `<span class="t-dim">[${t}]</span> ${catTag(cat)}${pidTag}${label} ${renderBar(pct, cls)} <span class="${cls}">${pctTxt}</span>`;
+  };
+  // animate one step end-to-end. err steps jam ~65% then flash red.
+  async function bootStep(row) {
+    if (!row[3]) { // no status -> just a banner line (e.g. "cail.sh v1.0.0", "ready in 0.24s")
+      addLine(logLine(row));
+      await sleep(80 + Math.random() * 60);
+      return;
+    }
+    const pid = fakePid();
+    const el = addLine(barLine(row, 0, pid));
+    const isErr = row[3] === 'err';
+    const ticks = 10 + Math.floor(Math.random() * 6);
+    const stall = isErr ? Math.floor(ticks * 0.65) : -1;
+    for (let i = 1; i <= ticks; i++) {
+      await sleep(18 + Math.random() * 28);
+      el.innerHTML = barLine(row, i / ticks, pid);
+      if (i === stall) {
+        await sleep(280);
+        el.innerHTML = logLine(row); // swap straight to "ERR" final form
+        return;
+      }
+    }
+    el.innerHTML = logLine(row);
+  }
+  // fake live CPU/MEM/uptime in the boot terminal title bar — hacker flavor
+  let __statsTick = null;
+  function startBootStats() {
+    const title = bootEl.querySelector('.terminal-title');
+    if (!title) return;
+    title.innerHTML = 'cail@bio — -zsh — 80×24 — ' +
+      '<span class="t-ok" id="bootCpu">cpu  4%</span> · ' +
+      '<span class="t-ok" id="bootMem">mem 1.40G/16G</span> · ' +
+      '<span class="t-dim" id="bootUp">up 14d 03:14</span>';
+    const cpuEl = title.querySelector('#bootCpu');
+    const memEl = title.querySelector('#bootMem');
+    const upEl  = title.querySelector('#bootUp');
+    let cpu = 4, mem = 1.40;
+    __statsTick = setInterval(() => {
+      cpu = Math.max(2, Math.min(97, cpu + (Math.random() - 0.45) * 14));
+      mem = Math.max(1.1, Math.min(15.9, mem + (Math.random() - 0.5) * 0.18));
+      const cpuCls = cpu > 75 ? 't-err' : (cpu > 45 ? 't-accent' : 't-ok');
+      const memCls = mem > 12 ? 't-err' : (mem > 8 ? 't-accent' : 't-ok');
+      if (cpuEl) { cpuEl.className = cpuCls; cpuEl.textContent = `cpu ${Math.round(cpu).toString().padStart(2,' ')}%`; }
+      if (memEl) { memEl.className = memCls; memEl.textContent = `mem ${mem.toFixed(2)}G/16G`; }
+      if (upEl) {
+        const d = new Date();
+        upEl.textContent = `up 14d ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      }
+    }, 480);
+  }
+  function stopBootStats() { if (__statsTick) { clearInterval(__statsTick); __statsTick = null; } }
 
   return new Promise(async (resolve) => {
     const finish = (gesture) => {
       sessionStorage.setItem('cails-bio:booted', '1');
       try { if (gesture && typeof getCtx === 'function') getCtx(); } catch {}
+      stopBootStats();
       bootEl.classList.add('fade');
       setTimeout(() => { bootEl.remove(); resolve(); }, 500);
     };
@@ -104,8 +175,9 @@ function runBoot() {
       return;
     }
 
-    // 0) ascii logo + brief beat
+    // 0) ascii logo + brief beat — kick off live title stats now too
     dropLogo();
+    startBootStats();
     await sleep(220);
 
     // 1) type the launch command
@@ -116,11 +188,9 @@ function runBoot() {
     cmdLine.querySelector('.boot-cursor')?.classList.remove('boot-cursor');
     await sleep(230);
 
-    // 2) stream the boot log — slight extra pause after an 'err' so the retry feels real
+    // 2) stream the boot log — each step animates its own live progress bar
     for (const row of BOOT_SEQ) {
-      addLine(logLine(row));
-      const isErr = row[3] === 'err';
-      await sleep(isErr ? 340 : (90 + Math.random() * 70));
+      await bootStep(row);
     }
     await sleep(260);
 

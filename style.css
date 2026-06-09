@@ -4037,6 +4037,14 @@ body.light-chaos {
 .cat-auth { color: #ffd166; }   /* gold — the blood oath */
 .cat-mood { color: #ff5878; }   /* hot crimson */
 .cat-omen { color: #b98cff; }   /* violet */
+
+/* hacker-terminal progress bar — block + shade chars in monospace */
+.boot-bar {
+  display: inline-block;
+  letter-spacing: -1px;
+  white-space: nowrap;
+  font-variant-ligatures: none;
+}
 .t-host { color: #ff9db9; }
 
 /* neofetch readout */
