@@ -3398,6 +3398,19 @@ function snakeSpeedUp() {
   s.level = Math.max(1, Math.round((SNAKE_TICK - s.tick) / 5) + 1);
 }
 
+// queue a turn, validated against the LAST buffered turn (not just current dir)
+// so two quick taps both register. blocks 180° reverse + duplicate. caps at 2.
+function snakeQueueTurn(nd) {
+  const s = snakeState;
+  if (!nd) return;
+  if (!s.inputQueue) s.inputQueue = [];
+  if (s.inputQueue.length >= 2) return;
+  const ref = s.inputQueue.length ? s.inputQueue[s.inputQueue.length - 1] : s.dir;
+  if (nd.x === -ref.x && nd.y === -ref.y) return; // no reverse-into-self
+  if (nd.x === ref.x && nd.y === ref.y) return;   // no-op repeat
+  s.inputQueue.push(nd);
+}
+
 function snakeStep() {
   const s = snakeState;
   if (s.paused) return;
@@ -3408,6 +3421,8 @@ function snakeStep() {
     if (s.slowSkip) return;
   }
 
+  // pull the next buffered turn so rapid taps aren't dropped between ticks
+  if (s.inputQueue && s.inputQueue.length) s.nextDir = s.inputQueue.shift();
   s.dir = s.nextDir;
   const head = { x: s.snake[0].x + s.dir.x, y: s.snake[0].y + s.dir.y };
 
@@ -3527,6 +3542,7 @@ function snakeStart() {
   ];
   s.dir = { x: 1, y: 0 };
   s.nextDir = { x: 1, y: 0 };
+  s.inputQueue = [];
   s.score = 0;
   s.tick = (s.mode === 'hardcore') ? 78 : SNAKE_TICK;
   s.bonus = null;
@@ -3692,7 +3708,7 @@ function initSnake() {
         if (dy > 0 && d.y !== -1) nd = { x: 0, y: 1 };
         else if (dy < 0 && d.y !== 1) nd = { x: 0, y: -1 };
       }
-      if (nd) snakeState.nextDir = nd;
+      if (nd) snakeQueueTurn(nd);
     }, { passive: true });
   }
 
@@ -3758,14 +3774,13 @@ function initSnake() {
     if (e.target === initials) return;
 
     if (!snakeState.running || snakeState.paused) return;
-    const d = snakeState.dir;
     let nd = null;
-    if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') && d.y !== 1) nd = { x: 0, y: -1 };
-    else if ((e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') && d.y !== -1) nd = { x: 0, y: 1 };
-    else if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && d.x !== 1) nd = { x: -1, y: 0 };
-    else if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && d.x !== -1) nd = { x: 1, y: 0 };
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') nd = { x: 0, y: -1 };
+    else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') nd = { x: 0, y: 1 };
+    else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') nd = { x: -1, y: 0 };
+    else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') nd = { x: 1, y: 0 };
     if (nd) {
-      snakeState.nextDir = nd;
+      snakeQueueTurn(nd);
       e.preventDefault();
     }
   });
