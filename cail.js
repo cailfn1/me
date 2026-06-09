@@ -240,12 +240,13 @@ function initTaglineRotator() {
             : h < 21 ? 'winding down, sort of'
             :          'just some guy (night shift)';
   const PHRASES = [
-    'just some guy · california',
+    '21 · california · nocturnal',
     tod,
-    'nocturnal by design',
-    'probably at the gym',
-    'watching anime instead of sleeping',
-    'still figuring out the code thing',
+    'hand-coded · no framework · no build step',
+    'vim user · dark mode for life',
+    'lifts heavy, sleeps light',
+    'shipping things at 3am',
+    'anime nerd in a crimson world',
   ];
 
   el.textContent = '';

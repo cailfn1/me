@@ -69,7 +69,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=125" />
+  <link rel="stylesheet" href="style.css?v=126" />
 </head>
 <body data-discord-id="1480622111339843876">
   <div class="blobs" aria-hidden="true">
@@ -371,7 +371,7 @@
             <div class="tcard-face tcard-back">
               <div class="tcard-frame">
                 <div class="tcard-back-title">cail · the nocturnal</div>
-                <p class="tcard-lore">forged in the small hours. runs on caffeine, crimson, and whatever's on repeat — building things by hand in the dark. still figuring out the code thing, but the vibe is immaculate.</p>
+                <p class="tcard-lore">forged in the small hours. runs on caffeine, crimson, and whatever's on repeat — hand-coding the web in the dark, no framework, no build step. nocturnal by design.</p>
                 <ul class="tcard-abilities">
                   <li><b>passive</b> — insomnia: immune to sleep</li>
                   <li><b>passive</b> — nocturnal: +2 vibes after dark</li>
@@ -405,7 +405,7 @@
           <div class="as-pursuits">
             <a href="#" class="as-word" data-word="gym">gym</a><span class="as-slash">/</span><a href="#anime" class="as-word" data-word="anime">anime</a><span class="as-slash">/</span><a href="#work" class="as-word" data-word="code">code</a><span class="as-dot">.</span><span class="as-caret" aria-hidden="true"></span>
           </div>
-          <div class="as-tag">// still figuring out the code thing</div>
+          <div class="as-tag">// hand-coded · no framework · no build step</div>
           <div class="as-now" id="aboutNow" aria-live="polite">
             <span class="as-now-dot" aria-hidden="true"></span>
             <span class="as-now-label">currently</span>
@@ -449,6 +449,25 @@
             </a>
           </li>
         </ul>
+      </div>
+    </section>
+    <section class="row" id="now">
+      <div class="row-col">
+        <div class="sec-heading"><span class="sec-dash"></span> now</div>
+        <p class="now-meta">updated <time datetime="2026-06">june 2026</time> · what's filling my time</p>
+        <ul class="now-list">
+          <li><span class="now-key">gym</span><span class="now-val">ppl split · 5 days/wk · bulking</span></li>
+          <li><span class="now-key">anime</span><span class="now-val">chainsaw man s2 · jjk movie wait</span></li>
+          <li><span class="now-key">code</span><span class="now-val">cail.love polish · poking at rust</span></li>
+          <li><span class="now-key">reading</span><span class="now-val">"the dispossessed" — le guin</span></li>
+          <li><span class="now-key">music</span><span class="now-val">clairo ep on repeat</span></li>
+          <li><span class="now-key">mood</span><span class="now-val">nocturnal, crimson, focused</span></li>
+        </ul>
+      </div>
+      <div class="row-col">
+        <div class="sec-heading"><span class="sec-dash"></span> what's this</div>
+        <p class="now-blurb">a <a href="https://nownownow.com/about" target="_blank" rel="noopener">/now page</a>. snapshot of what i'm actually doing right now — not a bio, not a blog. updated whenever life shifts.</p>
+        <p class="now-blurb now-blurb-dim">if you're on a friend's site and there's no /now page, ask them what they're up to. real answers beat curated highlight reels.</p>
       </div>
     </section>
     <section class="row" id="anime">
@@ -505,6 +524,29 @@
           <div class="lb-heading">top scores <button type="button" id="lbClear" class="lb-clear" hidden>clear board</button></div>
           <ol id="lbList" class="lb-list" aria-live="polite"></ol>
         </div>
+      </div>
+    </section>
+    <section class="row" id="notes">
+      <div class="row-col row-col-full">
+        <div class="sec-heading"><span class="sec-dash"></span> notes</div>
+        <p class="anime-tag">small things, half-formed thoughts, occasional changelog. shorter than a blog, longer than a tweet.</p>
+        <ol class="notes-list">
+          <li class="note">
+            <div class="note-meta"><time datetime="2026-06-03">2026.06.03</time> · <span class="note-tag note-tag-build">build</span></div>
+            <h3 class="note-title">a real /now page, finally</h3>
+            <p class="note-body">added a <a href="#now">/now</a> section + this notes feed. the site flexes hard visually but never said much about me. trying to fix that. tiny posts whenever, not committing to a blog cadence — that's how blogs die.</p>
+          </li>
+          <li class="note">
+            <div class="note-meta"><time datetime="2026-05-27">2026.05.27</time> · <span class="note-tag note-tag-build">build</span></div>
+            <h3 class="note-title">holo card took four attempts</h3>
+            <p class="note-body">studied simey's pokemon-cards-css for the foil math. recolored crimson + violet, dialed the glare down twice. flip-to-lore felt right the second i wired it up — some things just click and you know.</p>
+          </li>
+          <li class="note">
+            <div class="note-meta"><time datetime="2026-05-20">2026.05.20</time> · <span class="note-tag note-tag-life">life</span></div>
+            <h3 class="note-title">stopped using framer</h3>
+            <p class="note-body">opened it twice in three weeks. hand-coded everything in vanilla instead. site loads faster, fits in my head, and i actually understand every line. less tools = more shipped.</p>
+          </li>
+        </ol>
       </div>
     </section>
     <section class="row others-row" id="others">
@@ -687,6 +729,6 @@
 
   <div class="lyric-ticker" id="lyricTicker" aria-hidden="true"></div>
 
-  <script src="cail.js?v=125"></script>
+  <script src="cail.js?v=126"></script>
 </body>
 </html>
