@@ -3544,7 +3544,7 @@ function snakeStart() {
   s.nextDir = { x: 1, y: 0 };
   s.inputQueue = [];
   s.score = 0;
-  s.tick = (s.mode === 'hardcore') ? 78 : SNAKE_TICK;
+  s.tick = (s.mode === 'hardcore') ? 84 : SNAKE_TICK;
   s.bonus = null;
   s.particles = [];
   s.combo = 1;
