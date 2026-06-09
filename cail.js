@@ -30,15 +30,29 @@ function powerlinePrompt(path = '~/cail.love') {
 }
 
 // technical launch log streamed by the boot loader — [time, text, status]
+// boot log rows: [time, category|null, label, status|null]
+// category drives the color class (.cat-init/.cat-load/.cat-net/.cat-gfx/.cat-auth/.cat-mood/.cat-omen)
 const BOOT_SEQ = [
-  ['0.00s', 'cail.sh v1.0.0', null],
-  ['0.03s', 'init   bootstrapping cail.love .......', 'ok'],
-  ['0.06s', 'load   fonts · assets ...............', 'ok'],
-  ['0.09s', 'net    discord presence .............', 'ok'],
-  ['0.12s', 'net    last.fm scrobbler ............', 'ok'],
-  ['0.16s', 'gfx    starfield · fog · blood moon .', 'ok'],
-  ['0.19s', 'gfx    renderer .....................', 'ok'],
-  ['0.24s', 'ready in 0.24s', null],
+  ['0.00s', null,   'cail.sh v1.0.0',                           null],
+  ['0.03s', 'init', 'bootstrapping cail.love .......',          'ok'],
+  ['0.06s', 'load', 'fonts · assets ................',          'ok'],
+  ['0.09s', 'net',  'discord presence ..............',          'err'],   // dramatic fake fail
+  ['0.10s', 'net',  'retry (1/3) ..................',           'ok'],
+  ['0.12s', 'net',  'last.fm scrobbler .............',          'ok'],
+  ['0.14s', 'auth', 'blood oath ....................',          'bound'], // flavor
+  ['0.16s', 'gfx',  'starfield · fog · blood moon ..',          'ok'],
+  ['0.18s', 'mood', 'crimson protocol ..............',          'engaged'], // flavor
+  ['0.19s', 'gfx',  'renderer ......................',          'ok'],
+  ['0.21s', 'omen', 'blood moon rising .............',          'visible'], // flavor
+  ['0.24s', null,   'ready in 0.24s',                            null],
+];
+
+// ascii cail. logo — sits above the log, glows crimson
+const BOOT_LOGO = [
+  '   ___  __ _   _  _',
+  '  / __\\/ _` | | || |',
+  ' / /  | (_| | | || |',
+  ' \\/    \\__,_| |_||_| .',
 ];
 
 function runBoot() {
@@ -55,8 +69,13 @@ function runBoot() {
     log.scrollTop = log.scrollHeight;
     return d;
   };
-  const logLine = ([t, text, st]) =>
-    `<span class="t-dim">[${t}]</span> ${text}` + (st ? ` <span class="t-ok">${st}</span>` : '');
+  // status -> color class: ok/bound/engaged/visible = green; err = red; else default
+  const statusCls = (st) => st === 'err' ? 't-err' : (st ? 't-ok' : '');
+  const logLine = ([t, cat, text, st]) => {
+    const cls = statusCls(st);
+    const tag = cat ? `<span class="cat cat-${cat}">${cat.padEnd(4)}</span> ` : '     ';
+    return `<span class="t-dim">[${t}]</span> ${tag}${text}` + (st ? ` <span class="${cls}">${st}</span>` : '');
+  };
 
   return new Promise(async (resolve) => {
     const finish = (gesture) => {
@@ -66,8 +85,17 @@ function runBoot() {
       setTimeout(() => { bootEl.remove(); resolve(); }, 500);
     };
 
+    // helper: drop the ascii logo above the log (crimson glow)
+    const dropLogo = () => {
+      const wrap = document.createElement('pre');
+      wrap.className = 'boot-logo';
+      wrap.textContent = BOOT_LOGO.join('\n');
+      log.appendChild(wrap);
+    };
+
     // reduced motion: drop the whole log in at once and fade fast
     if (reducedMotion) {
+      dropLogo();
       addLine(powerlinePrompt() + ' <span class="term-caret">❯</span> ./cail.sh');
       BOOT_SEQ.forEach(row => addLine(logLine(row)));
       sessionStorage.setItem('cails-bio:booted', '1');
@@ -75,6 +103,10 @@ function runBoot() {
       setTimeout(() => { bootEl.remove(); resolve(); }, 220);
       return;
     }
+
+    // 0) ascii logo + brief beat
+    dropLogo();
+    await sleep(220);
 
     // 1) type the launch command
     const cmdLine = addLine(powerlinePrompt() + ' <span class="term-caret">❯</span> <span class="boot-cmd"></span><span class="boot-cursor"></span>');
@@ -84,10 +116,11 @@ function runBoot() {
     cmdLine.querySelector('.boot-cursor')?.classList.remove('boot-cursor');
     await sleep(230);
 
-    // 2) stream the boot log
+    // 2) stream the boot log — slight extra pause after an 'err' so the retry feels real
     for (const row of BOOT_SEQ) {
       addLine(logLine(row));
-      await sleep(90 + Math.random() * 70);
+      const isErr = row[3] === 'err';
+      await sleep(isErr ? 340 : (90 + Math.random() * 70));
     }
     await sleep(260);
 
