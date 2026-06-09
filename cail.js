@@ -33,18 +33,18 @@ function powerlinePrompt(path = '~/cail.love') {
 // boot log rows: [time, category|null, label, status|null]
 // category drives the color class (.cat-init/.cat-load/.cat-net/.cat-gfx/.cat-auth/.cat-mood/.cat-omen)
 const BOOT_SEQ = [
-  ['0.00s', null,   'cail.sh v1.0.0',                null],
-  ['0.03s', 'init', 'bootstrapping cail.love',       'ok'],
-  ['0.06s', 'load', 'fonts · assets',                'ok'],
-  ['0.09s', 'net',  'discord presence',              'err'],   // dramatic fake fail
-  ['0.10s', 'net',  'retry (1/3)',                   'ok'],
-  ['0.12s', 'net',  'last.fm scrobbler',             'ok'],
-  ['0.14s', 'auth', 'blood oath',                    'bound'], // flavor
-  ['0.16s', 'gfx',  'starfield · fog · blood moon',  'ok'],
-  ['0.18s', 'mood', 'crimson protocol',              'engaged'], // flavor
-  ['0.19s', 'gfx',  'renderer',                      'ok'],
-  ['0.21s', 'omen', 'blood moon rising',             'visible'], // flavor
-  ['0.24s', null,   'ready in 0.24s',                null],
+  ['0.00s', null,   'cail.sh v1.0.0 · linux 6.14-crimson #1 SMP', null],
+  ['0.03s', 'kern', 'bringing up user-space',                     'ok'],
+  ['0.06s', 'mmap', 'fonts + asset blobs (3.2MB)',                'ok'],
+  ['0.09s', 'wss ', 'gateway.discord.gg/?v=10',                   'err'],     // fake fail
+  ['0.10s', 'wss ', 'reconnect (1/3) — tls handshake',            'ok'],
+  ['0.12s', 'http', 'ws.last.fm/2.0 scrobbler bound',             'ok'],
+  ['0.14s', 'cryp', 'blood-oath.key sha512',                      'signed'],  // flavor
+  ['0.16s', 'gfx ', 'compositor: starfield + fog + moon',         'ok'],
+  ['0.18s', 'proc', '/dev/crimson — protocol attached',           'engaged'], // flavor
+  ['0.19s', 'vsnc', 'compositor @ 144Hz',                         'locked'],
+  ['0.21s', 'cron', 'blood-moon @rise dispatched',                'visible'], // flavor
+  ['0.24s', 'pid1', 'userspace ready in 0.24s',                   null],
 ];
 
 // ascii cail. logo — sits above the log, glows crimson
@@ -71,7 +71,7 @@ function runBoot() {
   };
   // status -> color class: ok/bound/engaged/visible = green; err = red; else default
   const statusCls = (st) => st === 'err' ? 't-err' : (st ? 't-ok' : '');
-  const catTag = (cat) => cat ? `<span class="cat cat-${cat}">${cat.padEnd(4)}</span> ` : '     ';
+  const catTag = (cat) => cat ? `<span class="cat cat-${cat.trim()}">${cat.padEnd(4)}</span> ` : '     ';
   const logLine = ([t, cat, text, st]) => {
     const cls = statusCls(st);
     return `<span class="t-dim">[${t}]</span> ${catTag(cat)}${text}` + (st ? ` <span class="${cls}">${st}</span>` : '');
