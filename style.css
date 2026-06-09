@@ -4030,16 +4030,18 @@ body.light-chaos {
   letter-spacing: 0.04em;
   white-space: pre;
 }
-.cat-init, .cat-kern { color: #c19dff; }   /* purple — kernel / init */
-.cat-load, .cat-mmap { color: #6bb8ff; }   /* blue — mmap / loader */
+.cat-init, .cat-kern { color: #c19dff; }   /* purple — kernel */
+.cat-load, .cat-mmap { color: #6bb8ff; }   /* blue — memory */
 .cat-net,  .cat-wss,
-.cat-http             { color: #5cd0d4; }  /* cyan — sockets / http */
-.cat-gfx              { color: #ff8aab; }  /* crimson — graphics */
-.cat-vsnc             { color: #ff8aab; }  /* crimson — vsync sibling */
-.cat-auth, .cat-cryp { color: #ffd166; }   /* gold — crypto / blood oath */
-.cat-mood, .cat-proc { color: #ff5878; }   /* hot crimson — userland process */
-.cat-omen, .cat-cron { color: #b98cff; }   /* violet — scheduler / cron */
-.cat-pid1             { color: #6b6b78; }  /* dim — init pid */
+.cat-http, .cat-tcp,
+.cat-dns,  .cat-arp  { color: #5cd0d4; }   /* cyan — network */
+.cat-gfx, .cat-vsnc  { color: #ff8aab; }   /* crimson — graphics (unused now) */
+.cat-auth, .cat-cryp { color: #ffd166; }   /* gold — crypto */
+.cat-mood, .cat-proc { color: #ff5878; }   /* hot crimson — process */
+.cat-omen, .cat-cron,
+.cat-ssh             { color: #b98cff; }   /* violet — pivot / cron */
+.cat-xpl             { color: #ff4d6a; font-weight: 800; text-shadow: 0 0 8px rgba(255, 77, 106, 0.6); }   /* blood red — payload drop */
+.cat-pid1            { color: #6b6b78; }   /* dim — init pid */
 
 /* hacker-terminal progress bar — block + shade chars in monospace */
 .boot-bar {

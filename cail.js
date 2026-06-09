@@ -33,18 +33,18 @@ function powerlinePrompt(path = '~/cail.love') {
 // boot log rows: [time, category|null, label, status|null]
 // category drives the color class (.cat-init/.cat-load/.cat-net/.cat-gfx/.cat-auth/.cat-mood/.cat-omen)
 const BOOT_SEQ = [
-  ['0.00s', null,   'cail.sh v1.0.0 · linux 6.14-crimson #1 SMP', null],
-  ['0.03s', 'kern', 'bringing up user-space',                     'ok'],
-  ['0.06s', 'mmap', 'fonts + asset blobs (3.2MB)',                'ok'],
-  ['0.09s', 'wss ', 'gateway.discord.gg/?v=10',                   'err'],     // fake fail
-  ['0.10s', 'wss ', 'reconnect (1/3) — tls handshake',            'ok'],
-  ['0.12s', 'http', 'ws.last.fm/2.0 scrobbler bound',             'ok'],
-  ['0.14s', 'cryp', 'blood-oath.key sha512',                      'signed'],  // flavor
-  ['0.16s', 'gfx ', 'compositor: starfield + fog + moon',         'ok'],
-  ['0.18s', 'proc', '/dev/crimson — protocol attached',           'engaged'], // flavor
-  ['0.19s', 'vsnc', 'compositor @ 144Hz',                         'locked'],
-  ['0.21s', 'cron', 'blood-moon @rise dispatched',                'visible'], // flavor
-  ['0.24s', 'pid1', 'userspace ready in 0.24s',                   null],
+  ['0.00s', null,   'linux 6.66-rc1 · jailbroken · uid=0',                null],
+  ['0.03s', 'kern', 'apparmor disabled · selinux permissive',             'ok'],
+  ['0.06s', 'mmap', 'heap +127MB · aslr bypassed',                        'ok'],
+  ['0.09s', 'tcp ', 'nmap -sS -p- 10.0.0.0/8',                            'err'],   // filtered, dramatic fail
+  ['0.10s', 'tcp ', 'fragmented syn-scan (1/3)',                          'ok'],
+  ['0.12s', 'dns ', 'resolver 1.1.1.1:53 · dns-over-tls',                 'bound'],
+  ['0.14s', 'cryp', 'aes-256-gcm · sha3-512 key derived',                 'signed'],
+  ['0.16s', 'arp ', 'spoof 192.168.1.1 · default gateway poisoned',       'ok'],
+  ['0.18s', 'proc', 'reverse shell → /dev/tcp/c2/4444',                   'armed'],
+  ['0.19s', 'ssh ', 'pivot tunnel :1337 via proxychains4',                'locked'],
+  ['0.21s', 'xpl ', 'CVE-2025-31337 · ring0 payload deployed',            'landed'],
+  ['0.24s', 'pid1', 'root@target — uid=0 acquired in 0.24s',              null],
 ];
 
 // ascii cail. logo — sits above the log, glows crimson
