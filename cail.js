@@ -3104,6 +3104,20 @@ function snakeDraw() {
     ctx.beginPath(); ctx.moveTo(0, i * cell); ctx.lineTo(w, i * cell); ctx.stroke();
   }
 
+  // arena corner brackets — terminal HUD framing on the play-field
+  ctx.strokeStyle = 'rgba(255, 88, 120, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  const bl = cell * 0.95; // bracket arm length
+  for (const [cx, cy, sx, sy] of [[0, 0, 1, 1], [w, 0, -1, 1], [0, w, 1, -1], [w, w, -1, -1]]) {
+    ctx.beginPath();
+    ctx.moveTo(cx + sx * bl, cy + sy * 1.5);
+    ctx.lineTo(cx + sx * 1.5, cy + sy * 1.5);
+    ctx.lineTo(cx + sx * 1.5, cy + sy * bl);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+
   // pulse factor (0..1) shared by food + bonus
   const pulse = 0.5 + 0.5 * Math.sin(s.pulse);
 
@@ -3238,6 +3252,16 @@ function snakeDraw() {
     ctx.fill();
   }
   ctx.globalAlpha = 1;
+
+  // arena vignette — darken toward the edges for depth (drawn over field, under UI)
+  if (!s._vg) {
+    const g = ctx.createRadialGradient(w / 2, w / 2, w * 0.28, w / 2, w / 2, w * 0.74);
+    g.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    g.addColorStop(1, 'rgba(0, 0, 0, 0.42)');
+    s._vg = g;
+  }
+  ctx.fillStyle = s._vg;
+  ctx.fillRect(-8, -8, w + 16, w + 16);
 
   // combo flash — crimson wash on big combos
   if (s.flash > 0.02) {
@@ -3613,6 +3637,7 @@ function openGame() {
   const canvas = $('#snakeCanvas');
   snakeState.ctx = canvas.getContext('2d');
   snakeState.cell = canvas.width / SNAKE_GRID;
+  snakeState._vg = null; // recompute vignette gradient for current canvas size
   if (snakeState.snake.length === 0) snakeRandomFood();
   startRenderLoop();
   fetchLeaderboard(); // refresh the global board on open

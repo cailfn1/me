@@ -2801,6 +2801,10 @@ body.light-chaos {
   border-bottom: 1px solid rgba(180, 30, 70, 0.18);
 }
 .hud-stat { display: inline-flex; align-items: baseline; gap: 7px; }
+.game-hud-bar .hud-stat + .hud-stat {
+  padding-left: 16px;
+  border-left: 1px solid rgba(180, 30, 70, 0.16);
+}
 .hud-label {
   font-size: 9px;
   text-transform: uppercase;
@@ -2930,7 +2934,7 @@ body.light-chaos {
 #snakeCanvas {
   display: block;
   background: #07070a;
-  border: 1px solid #1c1c22;
+  border: 1px solid rgba(180, 30, 70, 0.32);
   border-radius: 4px;
   image-rendering: pixelated;
   width: 400px;
@@ -2938,6 +2942,26 @@ body.light-chaos {
   max-width: 100%;
   max-height: 60vh;
   aspect-ratio: 1 / 1;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 0 30px rgba(180, 30, 70, 0.22),
+    inset 0 0 50px rgba(0, 0, 0, 0.5);
+}
+
+/* faint CRT scanlines over the play-field (matches the canvas inset) */
+.game-body::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 1;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.16) 0 1px,
+    transparent 1px 3px
+  );
+  opacity: 0.5;
 }
 
 .game-overlay {
