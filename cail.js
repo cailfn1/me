@@ -654,12 +654,23 @@ const MANUAL_BADGES = [
   { name: 'Completed a Quest', hash: QUEST_BADGE_HASH },
 ];
 
-// flex the full set of real Discord profile badges (every rare one), regardless of flags
+// curated badge wall — a few real Discord badges + custom hand-made cail badges.
+// keeps the cleanest Discord flexes, drops the noisy hypesquad/bug-hunter clutter.
 const ALL_BADGES = [
-  ...DISCORD_BADGES.map(b => ({ name: b.name, hash: b.hash })),
-  { name: 'Discord Nitro',     hash: NITRO_BADGE_HASH },
-  { name: 'Completed a Quest', hash: QUEST_BADGE_HASH },
+  { type: 'img', name: 'Active Developer',  hash: '6bdc42827a38498929a4920da12695d9' },
+  { type: 'img', name: 'Discord Nitro',     hash: NITRO_BADGE_HASH },
+  { type: 'img', name: 'Completed a Quest', hash: QUEST_BADGE_HASH },
+  // custom crimson identity badges (inline SVG, no CDN dependency)
+  { type: 'svg', name: 'no framework · no build step', glyph: 'code' },
+  { type: 'svg', name: 'lifts heavy · sleeps light',   glyph: 'lift' },
+  { type: 'svg', name: 'shipping at 3am',              glyph: 'moon' },
 ];
+
+const CBADGE_SVG = {
+  code: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-4.5 5 4.5 5M16 7l4.5 5L16 17M13.5 5l-3 14"/></svg>',
+  lift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8v8M7 6.5v11M17 6.5v11M20 8v8M7 12h10"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.9A9 9 0 1 1 11.1 3a7 7 0 0 0 9.9 9.9z"/></svg>',
+};
 
 function renderDiscordBadges() {
   const wrap = $('#discordBadges');
@@ -671,12 +682,19 @@ function renderDiscordBadges() {
     span.className = 'dbadge';
     span.setAttribute('data-label', b.name);
     span.style.setProperty('--i', i);
-    const img = document.createElement('img');
-    img.src = `https://cdn.discordapp.com/badge-icons/${b.hash}.png`;
-    img.alt = b.name;
-    img.loading = 'lazy';
-    img.onerror = () => span.remove();
-    span.appendChild(img);
+    if (b.type === 'svg') {
+      const ico = document.createElement('span');
+      ico.className = 'cbadge';
+      ico.innerHTML = CBADGE_SVG[b.glyph] || '';
+      span.appendChild(ico);
+    } else {
+      const img = document.createElement('img');
+      img.src = `https://cdn.discordapp.com/badge-icons/${b.hash}.png`;
+      img.alt = b.name;
+      img.loading = 'lazy';
+      img.onerror = () => span.remove();
+      span.appendChild(img);
+    }
     wrap.appendChild(span);
   });
 }
