@@ -293,7 +293,7 @@ function initTaglineRotator() {
             : h < 21 ? 'winding down, sort of'
             :          'just some guy (night shift)';
   const PHRASES = [
-    '21 · california · nocturnal',
+    '19 · california · nocturnal',
     tod,
     'hand-coded · no framework · no build step',
     'vim user · dark mode for life',
