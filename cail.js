@@ -1975,6 +1975,7 @@ function initAudioViz() {
 
   let running = false;
   const data = new Uint8Array(32);
+  const root = document.documentElement.style;
   function loop() {
     if (!running || !__analyser) return;
     __analyser.getByteFrequencyData(data);
@@ -1989,12 +1990,23 @@ function initAudioViz() {
       const h = Math.max(20, Math.min(100, (buckets[i] / 255) * 130));
       bars[i].style.height = h + '%';
     }
+    // publish bands as CSS vars — atmosphere reacts via body.audio-pulse rules
+    root.setProperty('--ab', (buckets[0] / 255).toFixed(3));
+    root.setProperty('--am', ((buckets[1] + buckets[2]) / 510).toFixed(3));
+    root.setProperty('--at', (buckets[3] / 255).toFixed(3));
     requestAnimationFrame(loop);
   }
   function avg(arr, a, b) {
     let s = 0;
     for (let i = a; i < b; i++) s += arr[i];
     return s / (b - a);
+  }
+
+  function decayPulse() {
+    root.setProperty('--ab', '0');
+    root.setProperty('--am', '0');
+    root.setProperty('--at', '0');
+    document.body.classList.remove('audio-pulse');
   }
 
   audio.addEventListener('play', () => {
@@ -2004,16 +2016,19 @@ function initAudioViz() {
     }
     if (__audioCtx.state === 'suspended') __audioCtx.resume();
     eq.classList.remove('fake');
+    document.body.classList.add('audio-pulse');
     running = true;
     loop();
   });
   audio.addEventListener('pause', () => {
     running = false;
     bars.forEach(b => b.style.height = '25%');
+    decayPulse();
   });
   audio.addEventListener('ended', () => {
     running = false;
     bars.forEach(b => b.style.height = '25%');
+    decayPulse();
   });
 }
 
