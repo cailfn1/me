@@ -47,6 +47,48 @@ const BOOT_SEQ = [
   ['0.24s', 'pid1', 'boot complete in 0.24s',                       null],
 ];
 
+// crimson matrix rain behind the boot terminal — runs only during boot, removes itself
+function startBootMatrix(win) {
+  const c = document.createElement('canvas');
+  c.className = 'boot-matrix';
+  win.insertBefore(c, win.firstChild);
+  const fit = () => {
+    const r = win.getBoundingClientRect();
+    c.width = Math.max(1, Math.floor(r.width));
+    c.height = Math.max(1, Math.floor(r.height));
+  };
+  fit();
+  const onR = () => fit();
+  window.addEventListener('resize', onR);
+  const ctx = c.getContext('2d');
+  const CELL = 14;
+  const cols = Math.max(1, Math.floor(c.width / CELL));
+  const ys = new Array(cols).fill(0).map(() => -Math.random() * c.height);
+  const GLYPHS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモ0123456789▒▓░';
+  let tick = setInterval(() => {
+    // fade prev frame to leave a trail
+    ctx.fillStyle = 'rgba(7, 7, 10, 0.18)';
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.font = "12px 'JetBrains Mono', monospace";
+    for (let i = 0; i < cols; i++) {
+      const x = i * CELL + 7;
+      const ch = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      // head glyph brighter, trail dim
+      ctx.fillStyle = 'rgba(255, 180, 200, 0.85)';
+      ctx.fillText(ch, x, ys[i]);
+      ctx.fillStyle = 'rgba(200, 30, 70, 0.45)';
+      ctx.fillText(ch, x, ys[i] - CELL);
+      ys[i] += CELL;
+      if (ys[i] > c.height && Math.random() > 0.965) ys[i] = -CELL * 2;
+    }
+  }, 75);
+  return () => {
+    clearInterval(tick); tick = null;
+    window.removeEventListener('resize', onR);
+    c.remove();
+  };
+}
+
 // ascii cail. logo — sits above the log, glows crimson
 const BOOT_LOGO = [
   '   ___  __ _   _  _',
@@ -152,6 +194,7 @@ function runBoot() {
       sessionStorage.setItem('cails-bio:booted', '1');
       try { if (gesture && typeof getCtx === 'function') getCtx(); } catch {}
       stopBootStats();
+      try { bootEl.__stopMatrix && bootEl.__stopMatrix(); } catch {}
       bootEl.classList.add('fade');
       setTimeout(() => { bootEl.remove(); resolve(); }, 500);
     };
@@ -173,6 +216,16 @@ function runBoot() {
       bootEl.classList.add('fade');
       setTimeout(() => { bootEl.remove(); resolve(); }, 220);
       return;
+    }
+
+    // matrix-rain canvas behind the log + scan line, glow effect throughout
+    const win = bootEl.querySelector('.terminal-window');
+    let stopMatrix = null;
+    if (win) {
+      win.classList.add('boot-fx');
+      stopMatrix = startBootMatrix(win);
+      // tear-down hook for finish() — bootEl gets the cleanup via attribute
+      bootEl.__stopMatrix = stopMatrix;
     }
 
     // 0) ascii logo + brief beat — kick off live title stats now too
@@ -2807,8 +2860,16 @@ const snakeState = {
   counting: false,     // mid 3·2·1 countdown
   countdown: null,     // current countdown glyph or null
   countdownAt: 0,
+  boss: null,          // { cx, cy, hp, maxHp, hitFlash, moveCounter, wave, spawnAt }
+  bossWave: 0,
+  bossWarnUntil: 0,    // performance.now() ms — show INCOMING flash until then
   ctx: null,
 };
+
+// boss trigger thresholds (score milestones). once cleared, advance bossWave.
+const BOSS_SCORES = [30, 80, 150];
+// HP per wave (1-indexed) — gets harder
+const BOSS_HP_BY_WAVE = [3, 4, 5];
 
 const LS_BEST = 'cails-bio:snake-best';
 function loadBest() { try { return parseInt(localStorage.getItem(LS_BEST) || '0', 10) || 0; } catch { return 0; } }
@@ -2915,6 +2976,42 @@ function snakeRandomFood() {
 function spawnBonus() {
   const cell = snakeFreeCell();
   snakeState.bonus = { x: cell.x, y: cell.y, ttl: BONUS_TTL, type: pickPowerup() };
+}
+
+// ===== BOSS MODE =====
+// pick a 3x3 area away from snake head
+function spawnBoss() {
+  const s = snakeState;
+  const head = s.snake[0] || { x: 10, y: 10 };
+  let cx, cy, tries = 0;
+  do {
+    cx = 2 + Math.floor(Math.random() * (SNAKE_GRID - 4));
+    cy = 2 + Math.floor(Math.random() * (SNAKE_GRID - 4));
+    tries++;
+  } while (tries < 40 && Math.hypot(cx - head.x, cy - head.y) < 7);
+  const hp = BOSS_HP_BY_WAVE[s.bossWave] || 4;
+  s.boss = { cx, cy, hp, maxHp: hp, hitFlash: 0, moveCounter: 0, wave: s.bossWave, spawnAt: performance.now() };
+  s.bossWarnUntil = performance.now() + 1100;
+  beep(160, 0.35, 'sawtooth', 0.08);
+  setTimeout(() => beep(220, 0.3, 'sawtooth', 0.07), 200);
+  s.bonus = null; // clear any pending pickup during boss fight
+  snakeUpdateHud();
+}
+
+// boss steps once toward snake head (axis with bigger gap), avoids snake body
+function moveBoss() {
+  const s = snakeState;
+  const b = s.boss;
+  if (!b) return;
+  const head = s.snake[0]; if (!head) return;
+  const dx = head.x - b.cx, dy = head.y - b.cy;
+  let nx = b.cx, ny = b.cy;
+  if (Math.abs(dx) > Math.abs(dy)) nx += Math.sign(dx);
+  else                              ny += Math.sign(dy);
+  // clamp inside grid so the 3x3 fits
+  nx = Math.max(1, Math.min(SNAKE_GRID - 2, nx));
+  ny = Math.max(1, Math.min(SNAKE_GRID - 2, ny));
+  b.cx = nx; b.cy = ny;
 }
 
 // apply a collected power-up's effect
@@ -3047,6 +3144,49 @@ function snakeDraw() {
     }
   }
 
+  // boss — 3x3 entity. outer 8 cells = dark crimson walls. center = glowing core.
+  if (s.boss) {
+    const b = s.boss;
+    const wallCol = b.hitFlash > 0.4 ? '#ffd9e3' : '#3a0512';
+    for (let oy = -1; oy <= 1; oy++) {
+      for (let ox = -1; ox <= 1; ox++) {
+        if (ox === 0 && oy === 0) continue; // skip center
+        const x = (b.cx + ox) * cell, y = (b.cy + oy) * cell;
+        ctx.fillStyle = wallCol;
+        ctx.shadowColor = '#8a1538';
+        ctx.shadowBlur = 6;
+        roundRectPath(ctx, x + 1, y + 1, cell - 2, cell - 2, 3);
+        ctx.fill();
+        // skull-rune dot
+        ctx.fillStyle = 'rgba(255, 138, 171, 0.45)';
+        ctx.beginPath();
+        ctx.arc(x + cell / 2, y + cell / 2, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+    // glowing core
+    const corePulse = 0.4 + 0.6 * pulse;
+    const cx2 = b.cx * cell + cell / 2, cy2 = b.cy * cell + cell / 2;
+    ctx.fillStyle = b.hitFlash > 0.2 ? '#ffd9e3' : '#ff5878';
+    ctx.shadowColor = '#ff2d5e';
+    ctx.shadowBlur = 18 + corePulse * 14;
+    ctx.beginPath();
+    ctx.arc(cx2, cy2, cell / 2 - 2 + corePulse * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // HP pips above boss
+    const pipY = (b.cy - 1) * cell - 6;
+    const pipW = 6, pipGap = 3, totalW = b.maxHp * pipW + (b.maxHp - 1) * pipGap;
+    let px = cx2 - totalW / 2;
+    for (let i = 0; i < b.maxHp; i++) {
+      ctx.fillStyle = i < b.hp ? '#ff5878' : 'rgba(60, 10, 20, 0.5)';
+      roundRectPath(ctx, px, pipY, pipW, 3, 1.5);
+      ctx.fill();
+      px += pipW + pipGap;
+    }
+  }
+
   // snake — head bright frost-pink → body gradient to deep crimson.
   // goes semi-transparent while the 'phase' power-up is active.
   const n = snake.length;
@@ -3128,6 +3268,26 @@ function snakeDraw() {
     ctx.textBaseline = 'alphabetic';
   }
 
+  // boss INCOMING warning — strobing red banner for ~1.1s after spawn
+  if (performance.now() < s.bossWarnUntil) {
+    const t = performance.now() * 0.01;
+    const strobe = 0.4 + 0.6 * Math.abs(Math.sin(t));
+    ctx.save();
+    ctx.fillStyle = `rgba(255, 45, 94, ${strobe * 0.18})`;
+    ctx.fillRect(-8, -8, w + 16, w + 16);
+    ctx.fillStyle = `rgba(255, 138, 171, ${strobe})`;
+    ctx.shadowColor = '#ff2d5e';
+    ctx.shadowBlur = 22;
+    ctx.font = `bold ${Math.round(cell * 1.4)}px 'JetBrains Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('!! INCOMING !!', w / 2, w / 2);
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'alphabetic';
+    ctx.restore();
+  }
+
   // 3·2·1 countdown — big centered glyph that scales + fades in
   if (s.countdown) {
     const p = Math.min(1, (performance.now() - s.countdownAt) / 680);
@@ -3191,6 +3351,17 @@ function snakeUpdateHud() {
       cb.hidden = true;
     }
   }
+  // boss HP pill — visible only mid-fight
+  const hb = $('#hudBoss');
+  if (hb) {
+    if (s.boss) {
+      hb.hidden = false;
+      const hp = $('#snakeBossHp'); if (hp) hp.textContent = s.boss.hp;
+      const mx = $('#snakeBossMax'); if (mx) mx.textContent = s.boss.maxHp;
+    } else {
+      hb.hidden = true;
+    }
+  }
 }
 
 function snakeSpeedUp() {
@@ -3231,11 +3402,62 @@ function snakeStep() {
     snakeGameOver();
     return;
   }
+
+  // boss collision — 3x3 around (cx, cy). center = core (hit it = -1 hp).
+  // outer 8 = walls (deadly unless phasing). check BEFORE moving snake forward.
+  if (s.boss) {
+    const dx = head.x - s.boss.cx, dy = head.y - s.boss.cy;
+    if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
+      if (dx === 0 && dy === 0) {
+        // CORE HIT
+        s.boss.hp--;
+        s.boss.hitFlash = 1;
+        s.shake = Math.max(s.shake, 8);
+        s.flash = 1;
+        s.score += 10 * snakeScoreMult();
+        snakeBurst(s.boss.cx, s.boss.cy, '#ff5878', 22);
+        beep(360, 0.12, 'square', 0.08);
+        if (s.boss.hp <= 0) {
+          // KILLED
+          const bx = s.boss.cx, by = s.boss.cy;
+          s.score += 30 * snakeScoreMult();
+          snakeBurst(bx, by, '#ff8aab', 60);
+          snakeBurst(bx, by, '#ffd9e3', 30);
+          s.shake = 16;
+          s.flash = 1;
+          beep(120, 0.5, 'sawtooth', 0.08);
+          setTimeout(() => beep(90, 0.6, 'sawtooth', 0.07), 80);
+          s.bossWave++;
+          s.boss = null;
+        }
+      } else if (!phasing) {
+        snakeGameOver();
+        return;
+      }
+    }
+  }
+
   s.snake.unshift(head);
 
-  // bonus lifetime + occasional spawn
+  // boss movement — slower than snake, gets faster each wave
+  if (s.boss) {
+    s.boss.moveCounter++;
+    const MOVE_EVERY = Math.max(3, 6 - s.boss.wave);
+    if (s.boss.moveCounter >= MOVE_EVERY) {
+      s.boss.moveCounter = 0;
+      moveBoss();
+    }
+    s.boss.hitFlash *= 0.65;
+  }
+
+  // boss spawn trigger — clear thresholds in order. no overlap with bonus.
+  if (!s.boss && s.bossWave < BOSS_SCORES.length && s.score >= BOSS_SCORES[s.bossWave]) {
+    spawnBoss();
+  }
+
+  // bonus lifetime + occasional spawn (suspended while a boss is alive)
   if (s.bonus) { s.bonus.ttl--; if (s.bonus.ttl <= 0) s.bonus = null; }
-  else if (s.score >= 3 && Math.random() < BONUS_CHANCE) spawnBonus();
+  else if (!s.boss && s.score >= 3 && Math.random() < BONUS_CHANCE) spawnBonus();
 
   let ate = false;
 
@@ -3295,6 +3517,9 @@ function snakeStart() {
   s.phaseUntil = 0;
   s.slowSkip = false;
   s.flash = 0;
+  s.boss = null;
+  s.bossWave = 0;
+  s.bossWarnUntil = 0;
   snakeRandomFood();
   snakeUpdateHud();
   $('#gameOverlay').hidden = true;
