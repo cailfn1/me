@@ -4035,13 +4035,15 @@ body.light-chaos {
 .cat-net,  .cat-wss,
 .cat-http, .cat-tcp,
 .cat-dns,  .cat-arp  { color: #5cd0d4; }   /* cyan — network */
-.cat-gfx, .cat-vsnc  { color: #ff8aab; }   /* crimson — graphics (unused now) */
-.cat-auth, .cat-cryp { color: #ffd166; }   /* gold — crypto */
-.cat-mood, .cat-proc { color: #ff5878; }   /* hot crimson — process */
+.cat-auth, .cat-cryp,
+.cat-tls             { color: #ffd166; }   /* gold — crypto / tls / keys */
+.cat-mood, .cat-proc,
+.cat-sand            { color: #ff5878; }   /* hot crimson — userspace / sandbox */
 .cat-omen, .cat-cron,
-.cat-ssh             { color: #b98cff; }   /* violet — pivot / cron */
-.cat-xpl             { color: #ff4d6a; font-weight: 800; text-shadow: 0 0 8px rgba(255, 77, 106, 0.6); }   /* blood red — payload drop */
-.cat-pid1            { color: #6b6b78; }   /* dim — init pid */
+.cat-ssh,  .cat-mux  { color: #b98cff; }   /* violet — sessions / scheduler */
+.cat-gfx, .cat-vsnc  { color: #ff8aab; }   /* crimson — graphics (kept for compat) */
+.cat-xpl             { color: #ff4d6a; font-weight: 700; }
+.cat-pid1, .cat-zsh  { color: #6b6b78; }   /* dim — init / shell */
 
 /* hacker-terminal progress bar — block + shade chars in monospace */
 .boot-bar {

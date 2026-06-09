@@ -33,18 +33,18 @@ function powerlinePrompt(path = '~/cail.love') {
 // boot log rows: [time, category|null, label, status|null]
 // category drives the color class (.cat-init/.cat-load/.cat-net/.cat-gfx/.cat-auth/.cat-mood/.cat-omen)
 const BOOT_SEQ = [
-  ['0.00s', null,   'linux 6.66-rc1 · jailbroken · uid=0',                null],
-  ['0.03s', 'kern', 'apparmor disabled · selinux permissive',             'ok'],
-  ['0.06s', 'mmap', 'heap +127MB · aslr bypassed',                        'ok'],
-  ['0.09s', 'tcp ', 'nmap -sS -p- 10.0.0.0/8',                            'err'],   // filtered, dramatic fail
-  ['0.10s', 'tcp ', 'fragmented syn-scan (1/3)',                          'ok'],
-  ['0.12s', 'dns ', 'resolver 1.1.1.1:53 · dns-over-tls',                 'bound'],
-  ['0.14s', 'cryp', 'aes-256-gcm · sha3-512 key derived',                 'signed'],
-  ['0.16s', 'arp ', 'spoof 192.168.1.1 · default gateway poisoned',       'ok'],
-  ['0.18s', 'proc', 'reverse shell → /dev/tcp/c2/4444',                   'armed'],
-  ['0.19s', 'ssh ', 'pivot tunnel :1337 via proxychains4',                'locked'],
-  ['0.21s', 'xpl ', 'CVE-2025-31337 · ring0 payload deployed',            'landed'],
-  ['0.24s', 'pid1', 'root@target — uid=0 acquired in 0.24s',              null],
+  ['0.00s', null,   'linux 6.8.0-45 · #generic SMP x86_64',         null],
+  ['0.03s', 'kern', 'smep · smap · kpti',                           'ok'],
+  ['0.06s', 'mmap', 'aslr · stack canaries · pie',                  'ok'],
+  ['0.09s', 'net ', 'wg0 handshake',                                'err'],     // realistic flake
+  ['0.10s', 'net ', 'wg0 retry',                                    'ok'],
+  ['0.12s', 'dns ', 'doh resolver 1.1.1.1',                         'bound'],
+  ['0.14s', 'tls ', 'cert rotation · letsencrypt',                  'signed'],
+  ['0.16s', 'auth', 'ed25519 hardware key',                         'ok'],
+  ['0.18s', 'sand', 'seccomp · cap_set cleared',                    'applied'],
+  ['0.19s', 'mux ', 'tmux 3.4 · 6 sessions restored',               'ok'],
+  ['0.21s', 'zsh ', 'history 47k · shell',                          'ready'],
+  ['0.24s', 'pid1', 'boot complete in 0.24s',                       null],
 ];
 
 // ascii cail. logo — sits above the log, glows crimson
