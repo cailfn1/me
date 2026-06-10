@@ -1861,17 +1861,18 @@ function initStarfield() {
   const stars = $('#stars');
   if (!stars) return;
   stars.innerHTML = '';
-  const count = 380;
+  // perf: fewer nodes, and only ~40% of them twinkle (.tw) — static stars cost
+  // nothing per frame. big stars get .star-big so audio-reactive filters only
+  // touch a handful of elements instead of the whole field.
+  const count = 230;
   for (let i = 0; i < count; i++) {
     const s = document.createElement('div');
-    s.className = 'star';
-    s.style.left  = (Math.random() * 100).toFixed(2) + 'vw';
-    s.style.top   = (Math.random() * 100).toFixed(2) + 'vh';
     const roll = Math.random();
-    let size, color, glow;
+    let size, color, glow, big = false;
     if (roll < 0.04) {
       // rare big glowy star, occasionally faint red-tinted to match the blood moon
       size = 3.2;
+      big = true;
       const reddish = Math.random() < 0.25;
       color = reddish ? '#ffd0d6' : '#ffffff';
       glow  = reddish ? '0 0 10px rgba(255, 110, 130, 0.7)' : '0 0 8px rgba(255,255,255,0.85)';
@@ -1884,13 +1885,19 @@ function initStarfield() {
       color = '#ffffff';
       glow  = '0 0 3px rgba(255,255,255,0.55)';
     }
+    const twinkles = big || Math.random() < 0.4;
+    s.className = 'star' + (twinkles ? ' tw' : '') + (big ? ' star-big' : '');
+    s.style.left  = (Math.random() * 100).toFixed(2) + 'vw';
+    s.style.top   = (Math.random() * 100).toFixed(2) + 'vh';
     s.style.width  = size + 'px';
     s.style.height = size + 'px';
     s.style.background = color;
     s.style.boxShadow  = glow;
     s.style.opacity = (Math.random() * 0.55 + 0.45).toFixed(2);
-    s.style.animationDelay = (Math.random() * 6).toFixed(1) + 's';
-    s.style.animationDuration = (3.5 + Math.random() * 5).toFixed(1) + 's';
+    if (twinkles) {
+      s.style.animationDelay = (Math.random() * 6).toFixed(1) + 's';
+      s.style.animationDuration = (3.5 + Math.random() * 5).toFixed(1) + 's';
+    }
     stars.appendChild(s);
   }
   // cache positions for the constellation feature
@@ -2043,6 +2050,9 @@ function initAudioViz() {
   let running = false;
   const data = new Uint8Array(32);
   const root = document.documentElement.style;
+  // last published band values — only touch CSS vars when they actually move,
+  // so idle/steady passages don't force style recalcs every frame
+  let pab = -1, pam = -1, pat = -1;
   function loop() {
     if (!running || !__analyser) return;
     __analyser.getByteFrequencyData(data);
@@ -2055,12 +2065,14 @@ function initAudioViz() {
     ];
     for (let i = 0; i < 4; i++) {
       const h = Math.max(20, Math.min(100, (buckets[i] / 255) * 130));
-      bars[i].style.height = h + '%';
+      // perf: scaleY is compositor-only — no layout per frame like height was
+      bars[i].style.transform = `scaleY(${(h / 100).toFixed(3)})`;
     }
     // publish bands as CSS vars — atmosphere reacts via body.audio-pulse rules
-    root.setProperty('--ab', (buckets[0] / 255).toFixed(3));
-    root.setProperty('--am', ((buckets[1] + buckets[2]) / 510).toFixed(3));
-    root.setProperty('--at', (buckets[3] / 255).toFixed(3));
+    const ab = buckets[0] / 255, am = (buckets[1] + buckets[2]) / 510, at = buckets[3] / 255;
+    if (Math.abs(ab - pab) > 0.02) { root.setProperty('--ab', ab.toFixed(3)); pab = ab; }
+    if (Math.abs(am - pam) > 0.02) { root.setProperty('--am', am.toFixed(3)); pam = am; }
+    if (Math.abs(at - pat) > 0.02) { root.setProperty('--at', at.toFixed(3)); pat = at; }
     requestAnimationFrame(loop);
   }
   function avg(arr, a, b) {
@@ -2083,18 +2095,20 @@ function initAudioViz() {
     }
     if (__audioCtx.state === 'suspended') __audioCtx.resume();
     eq.classList.remove('fake');
+    eq.classList.add('live');
     document.body.classList.add('audio-pulse');
     running = true;
+    pab = pam = pat = -1;
     loop();
   });
   audio.addEventListener('pause', () => {
     running = false;
-    bars.forEach(b => b.style.height = '25%');
+    bars.forEach(b => b.style.transform = 'scaleY(0.25)');
     decayPulse();
   });
   audio.addEventListener('ended', () => {
     running = false;
-    bars.forEach(b => b.style.height = '25%');
+    bars.forEach(b => b.style.transform = 'scaleY(0.25)');
     decayPulse();
   });
 }
@@ -2530,213 +2544,6 @@ function initSounds() {
   });
 }
 
-function initMatrixRain() {
-  const canvas = $('#matrixCanvas');
-  if (!canvas || reducedMotion) return;
-  const ctx = canvas.getContext('2d', { alpha: true });
-
-  // characters: katakana + binary + some symbols for variety
-  const KATA = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
-  const DIGITS = '0123456789';
-  const SYMS = '∆∇∑∏√∫≈≠≤≥<>{}[]/\\';
-  const POOL = KATA + KATA + DIGITS + SYMS;
-
-  // tuning
-  const FONT_SIZE = 16;
-  const FALL_SPEED = 0.55;
-  const SPIKE_SPEED = 1.4;          // fast meteor columns
-  const SPIKE_CHANCE = 0.04;        // % of columns that are spikes
-  const TRAIL_FADE = 0.09;          // higher = shorter trails (uses destination-out so canvas stays transparent)
-  const ACTIVE_RATE = 0.78;         // % of frames a column emits (higher = denser)
-  const REPEL_RADIUS = 140;         // px — columns near cursor dim
-  const LEAD_BRIGHT = 'rgba(190, 210, 255, 0.7)';
-  const TAIL_COLOR  = 'rgba(114, 137, 218, 0.45)';
-  const SPIKE_LEAD  = 'rgba(220, 230, 255, 0.95)';
-  const SPIKE_TAIL  = 'rgba(150, 170, 235, 0.65)';
-
-  let cols = 0;
-  let drops = [], spikes = [], prevChar = [];
-  let mouseX = -9999, mouseY = -9999;
-
-  window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
-  window.addEventListener('mouseleave', () => { mouseX = -9999; mouseY = -9999; });
-
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.floor(window.innerWidth * dpr);
-    canvas.height = Math.floor(window.innerHeight * dpr);
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    cols = Math.ceil(window.innerWidth / FONT_SIZE);
-    drops = new Array(cols).fill(0).map(() => Math.random() * (window.innerHeight / FONT_SIZE));
-    spikes = new Array(cols).fill(false).map(() => Math.random() < SPIKE_CHANCE);
-    prevChar = new Array(cols).fill('');
-    ctx.font = `${FONT_SIZE}px 'JetBrains Mono', monospace`;
-    ctx.textBaseline = 'top';
-  }
-  resize();
-  let resizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(resize, 120);
-  });
-
-  function frame() {
-    // transparent fade — subtracts alpha so blobs behind show through
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = `rgba(0, 0, 0, ${TRAIL_FADE})`;
-    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-    ctx.globalCompositeOperation = 'source-over';
-
-    ctx.font = `${FONT_SIZE}px 'JetBrains Mono', monospace`;
-
-    for (let i = 0; i < cols; i++) {
-      const isSpike = spikes[i];
-      const speed = isSpike ? SPIKE_SPEED : FALL_SPEED;
-
-      // skip some columns for sparser texture
-      if (!isSpike && Math.random() > ACTIVE_RATE) {
-        drops[i] += speed;
-        continue;
-      }
-
-      const ch = POOL[(Math.random() * POOL.length) | 0];
-      const x = i * FONT_SIZE;
-      const y = drops[i] * FONT_SIZE;
-
-      // mouse repulsion — dim columns near the cursor
-      const dx = x - mouseX;
-      const dy = y - mouseY;
-      const dist = Math.hypot(dx, dy);
-      const repel = dist < REPEL_RADIUS ? (dist / REPEL_RADIUS) : 1;   // 0..1
-      const alphaScale = 0.3 + 0.7 * repel;
-
-      // tail (previous char position, muted color)
-      if (prevChar[i]) {
-        const tailBase = isSpike ? SPIKE_TAIL : TAIL_COLOR;
-        ctx.fillStyle = scaleAlpha(tailBase, alphaScale);
-        ctx.fillText(prevChar[i], x, y - FONT_SIZE);
-      }
-
-      // lead char — with glow on spikes for that meteor look
-      const leadBase = isSpike ? SPIKE_LEAD : LEAD_BRIGHT;
-      ctx.fillStyle = scaleAlpha(leadBase, alphaScale);
-      if (isSpike) {
-        ctx.shadowColor = 'rgba(180, 200, 255, 0.9)';
-        ctx.shadowBlur = 8;
-      }
-      ctx.fillText(ch, x, y);
-      if (isSpike) ctx.shadowBlur = 0;
-
-      prevChar[i] = ch;
-      drops[i] += speed;
-
-      // reset off-screen
-      if (y > window.innerHeight && Math.random() > (isSpike ? 0.96 : 0.974)) {
-        drops[i] = -Math.random() * 20;
-        prevChar[i] = '';
-        // occasionally re-roll spike status when resetting
-        if (Math.random() < 0.15) spikes[i] = Math.random() < SPIKE_CHANCE;
-      }
-    }
-
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-}
-
-// helper: multiply the alpha of an "rgba(r, g, b, a)" string by a factor
-function scaleAlpha(rgba, factor) {
-  const m = rgba.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
-  if (!m) return rgba;
-  const a = (m[4] !== undefined ? parseFloat(m[4]) : 1) * factor;
-  return `rgba(${m[1]}, ${m[2]}, ${m[3]}, ${a.toFixed(3)})`;
-}
-
-function initAmbientParticles() {
-  if (reducedMotion) return;
-  const COUNT = 32;
-  // ~75% warm white, ~25% accent blurple, occasional teal
-  const colors = [
-    { rgb: '255, 255, 255', weight: 0.75 },
-    { rgb: '160, 180, 240', weight: 0.20 },
-    { rgb: '120, 200, 210', weight: 0.05 },
-  ];
-  function pickColor() {
-    const r = Math.random();
-    let acc = 0;
-    for (const c of colors) { acc += c.weight; if (r < acc) return c.rgb; }
-    return colors[0].rgb;
-  }
-
-  for (let i = 0; i < COUNT; i++) {
-    const p = document.createElement('div');
-    p.className = 'ambient-particle';
-    const startX = Math.random() * 100;            // vw
-    const drift = (Math.random() - 0.5) * 100;     // px sideways drift
-    const dur = 20 + Math.random() * 22;           // 20–42s (slower, meditative)
-    const delay = -Math.random() * dur;
-    const size = 1.5 + Math.random() * 3.5;        // 1.5–5px
-    const opacity = 0.35 + Math.random() * 0.55;
-    const colorRgb = pickColor();
-    const glowR = (size * 4).toFixed(0);
-
-    p.style.left = startX + 'vw';
-    p.style.width = p.style.height = size.toFixed(1) + 'px';
-    p.style.setProperty('--drift', drift.toFixed(0) + 'px');
-    p.style.animationDuration = dur.toFixed(1) + 's';
-    p.style.animationDelay = delay.toFixed(1) + 's';
-    p.style.background = `rgba(${colorRgb}, ${opacity.toFixed(2)})`;
-    p.style.boxShadow = `0 0 ${glowR}px rgba(${colorRgb}, ${(opacity * 0.7).toFixed(2)})`;
-    document.body.appendChild(p);
-  }
-}
-
-// downsample dante + quantize colors to ~8 levels per channel for a real "8-bit sprite" feel
-function pixelateDante() {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = () => {
-    const PX = 36;
-    const c = document.createElement('canvas');
-    c.width = PX;
-    c.height = PX;
-    const ctx = c.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
-    // crop tight to dante's face + a bit of his coat
-    const w = img.width;
-    const h = img.height;
-    const cropSize = Math.min(w, h * 0.78);
-    const sx = (w - cropSize) / 2;
-    const sy = h * 0.04;
-    ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, PX, PX);
-
-    // color quantization — bucket each rgb channel into 6 levels so it looks like sprite art
-    const LEVELS = 6;
-    const STEP = Math.floor(255 / (LEVELS - 1));
-    const data = ctx.getImageData(0, 0, PX, PX);
-    for (let i = 0; i < data.data.length; i += 4) {
-      data.data[i]     = Math.round(data.data[i]     / STEP) * STEP;
-      data.data[i + 1] = Math.round(data.data[i + 1] / STEP) * STEP;
-      data.data[i + 2] = Math.round(data.data[i + 2] / STEP) * STEP;
-      // push dark city background toward transparent
-      const lum = data.data[i] * 0.3 + data.data[i + 1] * 0.59 + data.data[i + 2] * 0.11;
-      if (lum < 70) data.data[i + 3] = 0;
-      else if (lum < 100) data.data[i + 3] = 140;
-    }
-    ctx.putImageData(data, 0, 0);
-
-    try {
-      const url = c.toDataURL('image/png');
-      document.documentElement.style.setProperty('--dante-pixel', `url("${url}")`);
-    } catch (e) {
-      // shouldn't happen, same-origin
-    }
-  };
-  img.src = 'assets/dante.jpg';
-}
-
 function initCursor() {
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   if (!fine || reducedMotion) return;
@@ -2755,12 +2562,21 @@ function initCursor() {
   let mx = window.innerWidth / 2, my = window.innerHeight / 2; // pointer target
   let rx = mx, ry = my;                                        // ring (spring)
   let magnet = null;                                           // hovered magnetic el
+  let magCx = 0, magCy = 0;                                    // cached magnet centre
+  // perf: rect is measured once on hover (+ refreshed on scroll), never per frame
+  function measureMagnet() {
+    if (!magnet) return;
+    const r = magnet.getBoundingClientRect();
+    magCx = r.left + r.width / 2;
+    magCy = r.top + r.height / 2;
+  }
 
   window.addEventListener('mousemove', (e) => { mx = e.clientX; my = e.clientY; }, { passive: true });
+  window.addEventListener('scroll', measureMagnet, { passive: true });
 
   document.addEventListener('pointerover', (e) => {
     const el = e.target.closest && e.target.closest(MAG_SEL);
-    if (el) { magnet = el; ring.classList.add('lock'); }
+    if (el) { magnet = el; measureMagnet(); ring.classList.add('lock'); }
   }, { passive: true });
   document.addEventListener('pointerout', (e) => {
     const el = e.target.closest && e.target.closest(MAG_SEL);
@@ -2773,10 +2589,8 @@ function initCursor() {
   function loop() {
     let tx = mx, ty = my;
     if (magnet && magnet.isConnected) {
-      const r = magnet.getBoundingClientRect();
-      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      tx = mx + (cx - mx) * 0.35;   // pull 35% toward the element centre
-      ty = my + (cy - my) * 0.35;
+      tx = mx + (magCx - mx) * 0.35;   // pull 35% toward the cached element centre
+      ty = my + (magCy - my) * 0.35;
     } else if (magnet) {
       magnet = null; ring.classList.remove('lock'); // element left the DOM
     }
@@ -3983,9 +3797,6 @@ function initDecryptHeadings() {
   }, { threshold: 0.55 });
   heads.forEach(h => io.observe(h));
 }
-
-// kick off ambient particles ASAP — aurora is pure CSS, no JS needed
-initAmbientParticles();
 
 runBoot().then(() => {
   startClock();

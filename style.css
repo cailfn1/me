@@ -3098,6 +3098,13 @@ body.light-chaos {
   box-shadow: 0 0 4px rgba(180, 30, 70,0.5);
   transition: height 60ms linear;
 }
+/* live analyser mode — bars scale on the compositor instead of re-laying-out */
+.music-eq.live span {
+  height: 100%;
+  transform: scaleY(0.25);
+  transform-origin: bottom;
+  transition: transform 60ms linear;
+}
 
 /* fallback animation when no analyser (browser blocked or pre-play) */
 .music-eq.fake span { animation: eqBar 0.9s ease-in-out infinite; }
@@ -4236,27 +4243,6 @@ body.light-chaos {
   50.01%, 100% { opacity: 0; }
 }
 
-.ambient-particle {
-  position: fixed;
-  bottom: -10px;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.45);
-  pointer-events: none;
-  z-index: -1;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
-  animation: ambientDrift linear infinite;
-  will-change: transform, opacity;
-}
-
-@keyframes ambientDrift {
-  0%   { transform: translate3d(0, 0, 0) scale(0.7); opacity: 0; }
-  10%  { opacity: 0.9; }
-  90%  { opacity: 0.9; }
-  100% { transform: translate3d(var(--drift, 30px), -110vh, 0) scale(1); opacity: 0; }
-}
-
 @media (max-width: 640px) {
   .music-widget {
     min-width: 0;
@@ -4349,9 +4335,9 @@ body.light-chaos {
   background: #ffffff;
   border-radius: 50%;
   box-shadow: 0 0 4px rgba(255,255,255,0.6);
-  animation: twinkle 4s ease-in-out infinite;
-  will-change: opacity;
 }
+/* perf: only .tw stars animate — static ones cost nothing per frame */
+.star.tw { animation: twinkle 4s ease-in-out infinite; }
 @keyframes twinkle {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.25; }
@@ -5024,7 +5010,8 @@ body.audio-pulse .ground-fog {
   filter: brightness(calc(1 + var(--am, 0) * 0.18));
   transition: filter 110ms linear;
 }
-body.audio-pulse .star {
+/* perf: audio filter only touches the ~10 big stars, not the whole field */
+body.audio-pulse .star-big {
   filter: brightness(calc(1 + var(--at, 0) * 0.45));
   transition: filter 90ms linear;
 }
@@ -5032,7 +5019,7 @@ body.audio-pulse .star {
   body.audio-pulse .blood-moon,
   body.audio-pulse .fog,
   body.audio-pulse .ground-fog,
-  body.audio-pulse .star { filter: none !important; }
+  body.audio-pulse .star-big { filter: none !important; }
 }
 
 /* ----- K2: decrypt headings — glyph scramble glows crimson, settles to normal ----- */
