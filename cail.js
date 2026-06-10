@@ -654,22 +654,24 @@ const MANUAL_BADGES = [
   { name: 'Completed a Quest', hash: QUEST_BADGE_HASH },
 ];
 
-// curated badge wall — a few real Discord badges + custom hand-made cail badges.
-// keeps the cleanest Discord flexes, drops the noisy hypesquad/bug-hunter clutter.
+// custom badge wall — guns.lol-style: every badge hand-made, own icon + own
+// name + own accent color. no Discord CDN, all inline SVG, all cail.
 const ALL_BADGES = [
-  { type: 'img', name: 'Active Developer',  hash: '6bdc42827a38498929a4920da12695d9' },
-  { type: 'img', name: 'Discord Nitro',     hash: NITRO_BADGE_HASH },
-  { type: 'img', name: 'Completed a Quest', hash: QUEST_BADGE_HASH },
-  // custom crimson identity badges (inline SVG, no CDN dependency)
-  { type: 'svg', name: 'no framework · no build step', glyph: 'code' },
-  { type: 'svg', name: 'lifts heavy · sleeps light',   glyph: 'lift' },
-  { type: 'svg', name: 'shipping at 3am',              glyph: 'moon' },
+  { name: 'og · est. mmxxvi',               glyph: 'crown', color: '#ffd166' },
+  { name: 'blood pact member',              glyph: 'blood', color: '#ff2d5e' },
+  { name: 'no framework · no build step',   glyph: 'code',  color: '#ff8aab' },
+  { name: 'lifts heavy · sleeps light',     glyph: 'lift',  color: '#ff5878' },
+  { name: 'anime nerd in a crimson world',  glyph: 'sword', color: '#e0436b' },
+  { name: 'shipping at 3am',                glyph: 'moon',  color: '#d8dce4' },
 ];
 
 const CBADGE_SVG = {
-  code: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-4.5 5 4.5 5M16 7l4.5 5L16 17M13.5 5l-3 14"/></svg>',
-  lift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8v8M7 6.5v11M17 6.5v11M20 8v8M7 12h10"/></svg>',
-  moon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.9A9 9 0 1 1 11.1 3a7 7 0 0 0 9.9 9.9z"/></svg>',
+  crown: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-1.6 11H4.6L3 7zm1.6 13h14.8v2H4.6v-2z"/></svg>',
+  blood: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5S5.5 10.2 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 10.2 12 2.5 12 2.5zm-2 12.7a2.4 2.4 0 0 0 2.3 2.4v1.6a4 4 0 0 1-3.9-4h1.6z"/></svg>',
+  code:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-4.5 5 4.5 5M16 7l4.5 5L16 17M13.5 5l-3 14"/></svg>',
+  lift:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8v8M7 6.5v11M17 6.5v11M20 8v8M7 12h10"/></svg>',
+  sword: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 4.5L9 15M19.5 4.5l-2-.5-8 8 .5 2.5 2.5.5 8-8-.5-2.5zM7.5 14.5l2 2M5 16l3 3M4 20l1-1"/></svg>',
+  moon:  '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.9A9 9 0 1 1 11.1 3a7 7 0 0 0 9.9 9.9z"/></svg>',
 };
 
 function renderDiscordBadges() {
@@ -682,19 +684,11 @@ function renderDiscordBadges() {
     span.className = 'dbadge';
     span.setAttribute('data-label', b.name);
     span.style.setProperty('--i', i);
-    if (b.type === 'svg') {
-      const ico = document.createElement('span');
-      ico.className = 'cbadge';
-      ico.innerHTML = CBADGE_SVG[b.glyph] || '';
-      span.appendChild(ico);
-    } else {
-      const img = document.createElement('img');
-      img.src = `https://cdn.discordapp.com/badge-icons/${b.hash}.png`;
-      img.alt = b.name;
-      img.loading = 'lazy';
-      img.onerror = () => span.remove();
-      span.appendChild(img);
-    }
+    const ico = document.createElement('span');
+    ico.className = 'cbadge';
+    ico.style.setProperty('--bc', b.color);
+    ico.innerHTML = CBADGE_SVG[b.glyph] || '';
+    span.appendChild(ico);
     wrap.appendChild(span);
   });
 }

@@ -4387,31 +4387,53 @@ body.light-chaos {
   transform: translateY(-3px) scale(1.14);
   filter: drop-shadow(0 4px 12px rgba(180, 30, 70, 0.65));
 }
-/* custom crimson identity badge (inline SVG, matches the 24px Discord badge box) */
+/* custom identity badge — guns.lol style: per-badge accent via --bc,
+   dark chip, glyph glow, hover shine sweep */
 .cbadge {
+  --bc: #ff8aab;
+  position: relative;
   width: 24px;
   height: 24px;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #ff8aab;
+  overflow: hidden;
+  color: var(--bc);
   background: linear-gradient(150deg, #1c0712, #2c0a1a);
-  border: 1px solid rgba(255, 138, 171, 0.35);
+  border: 1px solid color-mix(in srgb, var(--bc) 40%, transparent);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 0 9px rgba(180, 30, 70, 0.3);
   transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   animation: badgePop 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   animation-delay: calc(var(--i, 0) * 0.045s);
 }
-.cbadge svg { width: 14px; height: 14px; display: block; }
-.cbadge:hover {
+.cbadge svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--bc) 60%, transparent));
+}
+/* shine sweep on hover */
+.cbadge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.dbadge:hover .cbadge::before { transition: transform 0.55s ease; transform: translateX(120%); }
+.dbadge:hover .cbadge {
   transform: translateY(-3px) scale(1.14);
-  border-color: #ff8aab;
-  box-shadow: 0 4px 14px rgba(180, 30, 70, 0.6), inset 0 0 11px rgba(255, 88, 120, 0.35);
+  border-color: var(--bc);
+  box-shadow:
+    0 4px 14px color-mix(in srgb, var(--bc) 45%, transparent),
+    inset 0 0 11px color-mix(in srgb, var(--bc) 30%, transparent);
 }
 @media (prefers-reduced-motion: reduce) {
   .cbadge { animation: none; }
-  .cbadge:hover { transform: none; }
+  .cbadge::before { display: none; }
+  .dbadge:hover .cbadge { transform: none; }
 }
 @keyframes badgePop {
   from { opacity: 0; transform: translateY(8px) scale(0.5); }
