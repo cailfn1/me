@@ -657,12 +657,12 @@ const MANUAL_BADGES = [
 // custom badge wall — guns.lol-style: every badge hand-made, own icon + own
 // name + own accent color. no Discord CDN, all inline SVG, all cail.
 const ALL_BADGES = [
-  { name: 'og · est. mmxxvi',               glyph: 'crown', color: '#ffd166' },
-  { name: 'blood pact member',              glyph: 'blood', color: '#ff2d5e' },
-  { name: 'no framework · no build step',   glyph: 'code',  color: '#ff8aab' },
-  { name: 'lifts heavy · sleeps light',     glyph: 'lift',  color: '#ff5878' },
-  { name: 'anime nerd in a crimson world',  glyph: 'sword', color: '#e0436b' },
-  { name: 'shipping at 3am',                glyph: 'moon',  color: '#d8dce4' },
+  { name: 'OG',        glyph: 'crown', color: '#ffd166' },
+  { name: 'Donor',     glyph: 'blood', color: '#ff2d5e' },
+  { name: 'Developer', glyph: 'code',  color: '#ff8aab' },
+  { name: 'Lifter',    glyph: 'lift',  color: '#ff5878' },
+  { name: 'Otaku',     glyph: 'sword', color: '#e0436b' },
+  { name: 'Nocturnal', glyph: 'moon',  color: '#d8dce4' },
 ];
 
 const CBADGE_SVG = {
