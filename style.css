@@ -4350,6 +4350,7 @@ body.light-chaos {
   flex-wrap: wrap;
   gap: 9px;
   align-items: center;
+  align-self: flex-start;  /* don't stretch across the flex-column hero */
   margin: 4px 0 6px;
   min-height: 22px;
   padding: 4px 11px;
