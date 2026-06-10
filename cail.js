@@ -538,7 +538,29 @@ const COUNTER_READ = 'https://api.counterapi.dev/v1/caillove/v2/';
 const COUNTER_UP   = 'https://api.counterapi.dev/v1/caillove/v2/up';
 const LS_COUNTED   = 'cails-bio:counted-v2';
 
+// generic count-up: eases el's text from 0 → target (locale-formatted)
+function animateNum(el, target, suffix) {
+  if (!el) return;
+  const sfx = suffix || '';
+  el.textContent = target.toLocaleString() + sfx;
+  if (target === 0 || document.hidden || reducedMotion) return;
+  const duration = 1200;
+  const start = performance.now();
+  const step = (now) => {
+    const progress = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(ease * target).toLocaleString() + sfx;
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 function animateCount(target) {
+  // hero "views" line gets the same number, no second API hit
+  const hv = $('#heroViews');
+  if (hv) hv.textContent = target.toLocaleString();
+  const ns = $('#nsVisitors');
+  if (ns) ns.dataset.n = target; // picked up by the numbers section on reveal
   const el = $('#visitorCount');
   if (!el) return;
   // set the final value first so it's correct even if RAF never fires
@@ -579,6 +601,66 @@ function initVisitorCounter() {
       if (el) el.textContent = '—';
       console.warn('visitor counter failed:', err);
     });
+}
+
+// ===== "by the numbers" — live cross-platform stats wall =====
+const NUMBERS_CACHE_KEY = 'cails-bio:numbers-cache-v1';
+const NUMBERS_CACHE_TTL = 30 * 60 * 1000;
+
+async function fetchNumbers() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(NUMBERS_CACHE_KEY) || 'null');
+    if (cached && Date.now() - cached.t < NUMBERS_CACHE_TTL) return cached.v;
+  } catch {}
+  const v = {};
+  const jobs = [
+    // last.fm all-time scrobbles
+    fetch(`https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${LASTFM_USER}&api_key=${LASTFM_KEY}&format=json`)
+      .then(r => r.json()).then(j => { v.scrobbles = parseInt(j?.user?.playcount, 10) || 0; }),
+    // anilist episodes watched
+    fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        query: 'query($n:String){User(name:$n){statistics{anime{episodesWatched}}}}',
+        variables: { n: ANILIST_USER },
+      }),
+    }).then(r => r.json()).then(j => { v.episodes = j?.data?.User?.statistics?.anime?.episodesWatched || 0; }),
+    // github public repos
+    fetch('https://api.github.com/users/cailfn1')
+      .then(r => r.json()).then(j => { v.repos = j?.public_repos || 0; }),
+    // snake leaderboard top score
+    fetch(LB_API).then(r => r.json()).then(j => { v.snake = j?.scores?.[0]?.s || 0; }),
+  ];
+  await Promise.allSettled(jobs);
+  try { localStorage.setItem(NUMBERS_CACHE_KEY, JSON.stringify({ t: Date.now(), v })); } catch {}
+  return v;
+}
+
+function initStats() {
+  const grid = document.querySelector('.numbers-grid');
+  if (!grid) return;
+  let nums = null;
+  let revealed = false;
+  function apply() {
+    if (!revealed || !nums) return;
+    animateNum($('#nsScrobbles'), nums.scrobbles || 0);
+    animateNum($('#nsEpisodes'), nums.episodes || 0);
+    animateNum($('#nsRepos'), nums.repos || 0);
+    animateNum($('#nsSnake'), nums.snake || 0);
+    const nv = $('#nsVisitors');
+    animateNum(nv, parseInt(nv?.dataset.n, 10) || 0);
+  }
+  fetchNumbers().then(v => { nums = v; apply(); });
+  // count-up fires when the section scrolls into view
+  const io = new IntersectionObserver((entries) => {
+    if (entries.some(e => e.isIntersecting)) {
+      revealed = true;
+      apply();
+      io.disconnect();
+    }
+  }, { threshold: 0.35 });
+  io.observe(grid);
 }
 
 function typeBio() {
@@ -3807,6 +3889,7 @@ runBoot().then(() => {
   initCharacterCard();
   initMusic();
   initVisitorCounter();
+  initStats();
   typeBio();
   initKonami();
   initAvatarStreak();

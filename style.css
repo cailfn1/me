@@ -1848,6 +1848,69 @@ body.night-mode .star {
   font-size: 13px;
 }
 
+/* hero meta line — guns.lol-style views + location under the tagline */
+.hero-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: rgba(216, 220, 228, 0.55);
+}
+.hero-meta svg {
+  width: 13px;
+  height: 13px;
+  color: rgba(255, 138, 171, 0.65);
+  flex: none;
+}
+.hero-meta #heroViews { color: #ff8aab; font-weight: 700; }
+.hero-meta-sep { color: rgba(216, 220, 228, 0.3); margin: 0 2px; }
+
+/* "by the numbers" — live stats wall */
+.numbers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.nstat {
+  padding: 16px 14px 13px;
+  background: linear-gradient(165deg, rgba(20, 8, 14, 0.75), rgba(10, 4, 8, 0.85));
+  border: 1px solid rgba(180, 30, 70, 0.22);
+  border-radius: 10px;
+  text-align: center;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.25s ease;
+}
+.nstat:hover {
+  border-color: rgba(255, 138, 171, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(120, 10, 40, 0.3);
+}
+.nstat-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 26px;
+  font-weight: 700;
+  color: #ff8aab;
+  text-shadow: 0 0 16px rgba(180, 30, 70, 0.5);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.nstat-label {
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.nstat-src {
+  margin-top: 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(216, 220, 228, 0.32);
+}
+
 .activity {
   color: var(--accent);
   font-size: 12px;

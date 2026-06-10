@@ -69,7 +69,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=141" />
+  <link rel="stylesheet" href="style.css?v=142" />
 </head>
 <body data-discord-id="1480622111339843876">
   <div class="blobs" aria-hidden="true">
@@ -311,6 +311,13 @@
             <div class="discord-badges" id="discordBadges" aria-label="discord badges"></div>
           </div>
           <p class="tagline" id="tagline">just some guy</p>
+          <p class="hero-meta" aria-label="profile stats">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+            <span id="heroViews">--</span> views
+            <span class="hero-meta-sep">·</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 10c0 5.2-8 12-8 12s-8-6.8-8-12a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
+            california
+          </p>
           <div class="activity-row" id="activityRow">
             <img class="activity-art" id="activityArt" alt="" />
             <div class="activity-meta">
@@ -507,6 +514,18 @@
             <p class="work-desc">the page you're reading rn. just html, css, and js. source is on github if u wanna peek.</p>
             <span class="work-tag"><i class="work-dot" style="--c:#1572b6"></i><span class="work-chip">CSS</span><span class="work-chip">JS</span></span>
           </a>
+        </div>
+      </div>
+    </section>
+    <section class="row" id="stats">
+      <div class="row-col row-col-full">
+        <div class="sec-heading"><span class="sec-dash"></span> by the numbers</div>
+        <div class="numbers-grid">
+          <div class="nstat"><div class="nstat-val" id="nsScrobbles">--</div><div class="nstat-label">songs scrobbled</div><div class="nstat-src">last.fm</div></div>
+          <div class="nstat"><div class="nstat-val" id="nsEpisodes">--</div><div class="nstat-label">anime episodes</div><div class="nstat-src">anilist</div></div>
+          <div class="nstat"><div class="nstat-val" id="nsRepos">--</div><div class="nstat-label">public repos</div><div class="nstat-src">github</div></div>
+          <div class="nstat"><div class="nstat-val" id="nsSnake">--</div><div class="nstat-label">arcade top score</div><div class="nstat-src">snake.exe</div></div>
+          <div class="nstat"><div class="nstat-val" id="nsVisitors">--</div><div class="nstat-label">souls visited</div><div class="nstat-src">cail.love</div></div>
         </div>
       </div>
     </section>
@@ -733,6 +752,6 @@
 
   <div class="lyric-ticker" id="lyricTicker" aria-hidden="true"></div>
 
-  <script src="cail.js?v=141"></script>
+  <script src="cail.js?v=142"></script>
 </body>
 </html>
