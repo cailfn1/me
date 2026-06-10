@@ -4408,10 +4408,10 @@ body.light-chaos {
   animation-delay: calc(var(--i, 0) * 0.045s);
 }
 .cbadge svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   display: block;
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--bc) 60%, transparent));
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--bc) 55%, transparent));
 }
 /* shine sweep on hover */
 .cbadge::before {
