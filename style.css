@@ -5068,26 +5068,54 @@ body.eclipse .blood-moon { animation: moonEclipse 7.2s ease-in-out forwards; }
    touch filters on existing atmosphere layers, kept subtle so the page stays
    readable at full bass. */
 body.audio-pulse .blood-moon {
-  filter: blur(calc(8px - var(--ab, 0) * 2px))
-          brightness(calc(1 + var(--ab, 0) * 0.3))
-          saturate(calc(1 + var(--ab, 0) * 0.25));
-  transition: filter 90ms linear;
+  filter: blur(calc(8px - var(--ab, 0) * 5px))
+          brightness(calc(1 + var(--ab, 0) * 0.75))
+          saturate(calc(1 + var(--ab, 0) * 0.6));
+  transition: filter 80ms linear;
 }
 body.audio-pulse .fog,
 body.audio-pulse .ground-fog {
-  filter: brightness(calc(1 + var(--am, 0) * 0.18));
+  filter: brightness(calc(1 + var(--am, 0) * 0.35));
   transition: filter 110ms linear;
 }
-/* perf: audio filter only touches the ~10 big stars, not the whole field */
+/* perf: audio filter touches ~10 big stars; all-stars brightness is on the container */
 body.audio-pulse .star-big {
-  filter: brightness(calc(1 + var(--at, 0) * 0.45));
+  filter: brightness(calc(1 + var(--at, 0) * 1.1));
+  transition: filter 80ms linear;
+}
+/* small stars brighten faintly on treble via container */
+body.audio-pulse .stars {
+  filter: brightness(calc(1 + var(--at, 0) * 0.28));
   transition: filter 90ms linear;
+}
+/* constellation lines glow brighter on treble */
+body.audio-pulse .constellation line {
+  stroke-opacity: calc(0.55 + var(--at, 0) * 0.45);
+  filter: drop-shadow(0 0 calc(3px + var(--at, 0) * 7px) rgba(255, 180, 220, calc(0.55 + var(--at, 0) * 0.45)));
+  transition: filter 90ms linear, stroke-opacity 90ms linear;
+}
+/* beat flash — radial crimson pulse on sharp bass spike */
+body.audio-beat::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(ellipse at 72% 18%, rgba(180, 30, 60, 0.22) 0%, transparent 58%);
+  animation: beatFlash 220ms ease-out forwards;
+}
+@keyframes beatFlash {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   body.audio-pulse .blood-moon,
   body.audio-pulse .fog,
   body.audio-pulse .ground-fog,
-  body.audio-pulse .star-big { filter: none !important; }
+  body.audio-pulse .star-big,
+  body.audio-pulse .stars,
+  body.audio-pulse .constellation line { filter: none !important; }
+  body.audio-beat::after { display: none; }
 }
 
 /* ----- K2: decrypt headings — glyph scramble glows crimson, settles to normal ----- */

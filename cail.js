@@ -2141,7 +2141,8 @@ function initAudioViz() {
   const root = document.documentElement.style;
   // last published band values — only touch CSS vars when they actually move,
   // so idle/steady passages don't force style recalcs every frame
-  let pab = -1, pam = -1, pat = -1;
+  let pab = -1, pam = -1, pat = -1, prevAb = 0;
+  let _beatTimeout = null;
   function loop() {
     if (!running || !__analyser) return;
     __analyser.getByteFrequencyData(data);
@@ -2162,6 +2163,13 @@ function initAudioViz() {
     if (Math.abs(ab - pab) > 0.02) { root.setProperty('--ab', ab.toFixed(3)); pab = ab; }
     if (Math.abs(am - pam) > 0.02) { root.setProperty('--am', am.toFixed(3)); pam = am; }
     if (Math.abs(at - pat) > 0.02) { root.setProperty('--at', at.toFixed(3)); pat = at; }
+    // beat flash: sharp bass spike → brief crimson vignette via body.audio-beat
+    if (ab > 0.62 && prevAb < 0.38 && !document.body.classList.contains('audio-beat')) {
+      document.body.classList.add('audio-beat');
+      clearTimeout(_beatTimeout);
+      _beatTimeout = setTimeout(() => document.body.classList.remove('audio-beat'), 240);
+    }
+    prevAb = ab;
     requestAnimationFrame(loop);
   }
   function avg(arr, a, b) {
@@ -2175,6 +2183,9 @@ function initAudioViz() {
     root.setProperty('--am', '0');
     root.setProperty('--at', '0');
     document.body.classList.remove('audio-pulse');
+    clearTimeout(_beatTimeout);
+    document.body.classList.remove('audio-beat');
+    prevAb = 0;
   }
 
   audio.addEventListener('play', () => {
