@@ -2,6 +2,7 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 const pad = (n, size = 2) => n.toString().padStart(size, '0');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let _lastfmInterval = null;
 
 // pause animation + snake loop while tab hidden — saves battery, lets browser sleep rAF cleanly
 document.addEventListener('visibilitychange', () => {
@@ -900,10 +901,12 @@ function initLanyard() {
   const applyPresence = (data) => {
     if (!data) return;
     const status = data.discord_status || 'offline';
-    statusDot.classList.remove('idle', 'dnd', 'offline');
-    if (status === 'idle') statusDot.classList.add('idle');
-    else if (status === 'dnd') statusDot.classList.add('dnd');
-    else if (status === 'offline') statusDot.classList.add('offline');
+    if (statusDot) {
+      statusDot.classList.remove('idle', 'dnd', 'offline');
+      if (status === 'idle') statusDot.classList.add('idle');
+      else if (status === 'dnd') statusDot.classList.add('dnd');
+      else if (status === 'offline') statusDot.classList.add('offline');
+    }
     if (avatarEl) avatarEl.dataset.status = status;
     if (data.discord_user) {
       applyDiscordAvatar(data.discord_user);
@@ -922,8 +925,10 @@ function initLanyard() {
     }
     const isSpotify = !!(data.listening_to_spotify && data.spotify);
     if (label) {
-      activity.textContent = label;
-      activity.classList.add('show');
+      if (activity) {
+        activity.textContent = label;
+        activity.classList.add('show');
+      }
       if (activityRow) {
         activityRow.classList.add('show');
         activityRow.classList.toggle('spotify', isSpotify);
@@ -938,7 +943,7 @@ function initLanyard() {
         }
       }
     } else {
-      activity.classList.remove('show');
+      if (activity) activity.classList.remove('show');
       if (activityRow) {
         activityRow.classList.remove('show');
         activityRow.classList.remove('spotify');
@@ -1012,7 +1017,7 @@ const TERM_COMMANDS = {
     '  clear      — clear terminal',
     '  exit / q   — close terminal',
   ],
-  about: () => [$('#bioText').getAttribute('data-text') || ''],
+  about: () => [$('#bioText')?.getAttribute('data-text') || ''],
   whoami: () => ['cail'],
   ls: () => ['about.md   skills.txt   projects/   links.txt   cail.sh*'],
   pwd: () => ['/home/cail/cail.love'],
@@ -1320,7 +1325,8 @@ async function initLastfm() {
   }
   await refresh();
   // refresh every 30s to keep "now playing" fresh
-  setInterval(refresh, 30000);
+  clearInterval(_lastfmInterval);
+  _lastfmInterval = setInterval(() => { if (!document.hidden) refresh(); }, 30000);
 }
 
 // ===== music identity: "on repeat" shrine + lyric ticker + mood ring =====
@@ -1768,6 +1774,7 @@ function initGuestbook() {
     const msgEl = $('#gbMsg');
     const honeyEl = $('#gbWebsite');
     const btn = form.querySelector('.gb-submit');
+    if (!nameEl || !msgEl) return;
     const name = nameEl.value.trim().slice(0, 24);
     const message = msgEl.value.trim().slice(0, 200);
     if (!message) return;
@@ -3515,7 +3522,7 @@ function snakeGameOver() {
 
   // let the shake + death particles play before the panel covers the board
   setTimeout(() => {
-    if (s.running) return; // a new game already started during the delay
+    if (s.running || s.counting) return; // a new game already started during the delay
     const overlay = $('#gameOverlay');
     const title = $('#gameOverlayTitle');
     const sub = $('#gameOverlaySub');
@@ -3546,6 +3553,7 @@ function snakeGameOver() {
 
 function openGame() {
   const g = $('#game');
+  if (!g) return;
   g.hidden = false;
   const overlay = $('#gameOverlay');
   $('#gameOverlayTitle').textContent = 'ready?';
@@ -3557,6 +3565,7 @@ function openGame() {
   overlay.hidden = false;
   // reset HUD
   snakeState.score = 0; snakeState.level = 1; snakeState.combo = 1;
+  snakeState.boss = null; snakeState.bossWave = 0; snakeState.bossWarnUntil = 0;
   snakeState.best = loadBest();
   snakeUpdateHud();
   // size the canvas based on layout (keeps it crisp on hi-dpi)
@@ -3570,7 +3579,9 @@ function openGame() {
 }
 
 function closeGame() {
-  $('#game').hidden = true;
+  const _cg = $('#game');
+  if (!_cg) return;
+  _cg.hidden = true;
   clearInterval(snakeState.loop);
   stopRenderLoop();
   snakeState.running = false;
@@ -3589,6 +3600,7 @@ function initSnake() {
   // game mode picker (classic / wrap / hardcore)
   document.querySelectorAll('#gameModes .mode-btn').forEach(b => {
     b.addEventListener('click', () => {
+      if (snakeState.running || snakeState.counting) return;
       snakeState.mode = b.dataset.mode;
       document.querySelectorAll('#gameModes .mode-btn').forEach(x => x.classList.toggle('active', x === b));
     });
@@ -3606,7 +3618,7 @@ function initSnake() {
       const dx = t.clientX - ts.x, dy = t.clientY - ts.y;
       ts = null;
       if (Math.abs(dx) < 20 && Math.abs(dy) < 20) { // tap
-        if (!snakeState.running && !snakeState.counting) startBtn.click();
+        if (!snakeState.running && !snakeState.counting && startBtn) startBtn.click();
         return;
       }
       const d = snakeState.dir;
@@ -3622,31 +3634,32 @@ function initSnake() {
     }, { passive: true });
   }
 
-  startBtn.addEventListener('click', () => {
+  if (startBtn) startBtn.addEventListener('click', () => {
     if (snakeState.counting) return;
-    if (!initials.hidden && initials.value.trim()) {
+    if (initials && !initials.hidden && initials.value.trim()) {
       submitScore(initials.value.trim(), snakeState.score);
     }
     snakeStart();
   });
 
-  initials.addEventListener('keydown', (e) => {
+  if (initials) initials.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      startBtn.click();
+      if (startBtn) startBtn.click();
     }
   });
 
   // global keybinds for the game
   window.addEventListener('keydown', (e) => {
     // 'g' opens the game when not typing
-    if ((e.key === 'g' || e.key === 'G') && $('#game').hidden &&
+    const _game = $('#game');
+    if ((e.key === 'g' || e.key === 'G') && _game && _game.hidden &&
         !(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'))) {
       e.preventDefault();
       openGame();
       return;
     }
-    if ($('#game').hidden) return;
+    if (!_game || _game.hidden) return;
 
     if (e.key === 'Escape') {
       closeGame();

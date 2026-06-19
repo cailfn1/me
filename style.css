@@ -68,6 +68,10 @@ select:focus-visible,
 body.tab-hidden *,
 body.tab-hidden *::before,
 body.tab-hidden *::after { animation-play-state: paused !important; }
+body.tab-hidden .blood-moon,
+body.tab-hidden .fog,
+body.tab-hidden .ground-fog,
+body.tab-hidden .star-big { transition: none !important; }
 
 /* ===== respect prefers-reduced-motion globally ===== */
 @media (prefers-reduced-motion: reduce) {

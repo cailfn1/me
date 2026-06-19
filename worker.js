@@ -18,17 +18,38 @@ const SOULS_KEY = 'souls-geo'; // { "US": 12, "JP": 3, ... } — country codes O
 const WX_TTL = 600;            // weather cache seconds (keyed by coarse lat/lon)
 
 // per-IP anti-spam (counts within a rolling 60s window — KV TTL minimum)
-const LB_RATE_MAX = 8;   // max score submits / minute / IP
+const LB_RATE_MAX = 3;   // max score submits / minute / IP
 const SOUL_RATE_MAX = 3; // max new-soul increments / minute / IP
 
 // light hate-only filter (swearing is fine, slurs are not)
 const BANNED = ['nigger', 'nigga', 'faggot', 'retard', 'kike', 'chink', 'spic', 'tranny'];
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': 'https://cail.love',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+    headers: { 'content-type': 'application/json', 'cache-control': 'no-store', ...CORS_HEADERS },
   });
+}
+
+async function timingSafeEqualStr(a, b) {
+  const enc = new TextEncoder();
+  const ka = await crypto.subtle.importKey('raw', enc.encode(a), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const kb = await crypto.subtle.importKey('raw', enc.encode(b), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const nonce = enc.encode('cail.love');
+  const [sa, sb] = await Promise.all([
+    crypto.subtle.sign('HMAC', ka, nonce),
+    crypto.subtle.sign('HMAC', kb, nonce),
+  ]);
+  const va = new Uint8Array(sa), vb = new Uint8Array(sb);
+  let diff = 0;
+  for (let i = 0; i < va.length; i++) diff |= va[i] ^ vb[i];
+  return diff === 0;
 }
 
 function clean(str, max) {
@@ -121,6 +142,9 @@ async function putMessages(env, msgs) {
 }
 
 async function handleApi(request, env, url) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
   const ip = request.headers.get('CF-Connecting-IP') || '0.0.0.0';
   const path = url.pathname;
 
@@ -215,7 +239,7 @@ async function handleApi(request, env, url) {
   // with ts → remove one score; without → wipe the whole board
   if (path === '/api/leaderboard' && request.method === 'DELETE') {
     const key = url.searchParams.get('key');
-    if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) return json({ ok: false, error: 'unauthorized' }, 401);
+    if (!env.ADMIN_KEY || !(await timingSafeEqualStr(key || '', env.ADMIN_KEY))) return json({ ok: false, error: 'unauthorized' }, 401);
     const ts = url.searchParams.get('ts');
     if (ts) {
       const raw = await env.GUESTBOOK.get(LB_KEY);
@@ -274,7 +298,7 @@ async function handleApi(request, env, url) {
   if (path === '/api/guestbook/reply' && request.method === 'POST') {
     let body;
     try { body = await request.json(); } catch { return json({ ok: false, error: 'bad request' }, 400); }
-    if (!env.ADMIN_KEY || body.key !== env.ADMIN_KEY) return json({ ok: false, error: 'unauthorized' }, 401);
+    if (!env.ADMIN_KEY || !(await timingSafeEqualStr(body.key || '', env.ADMIN_KEY))) return json({ ok: false, error: 'unauthorized' }, 401);
     const id = String(body.id || '');
     const text = clean(body.text, TEXT_MAX);
     if (!text) return json({ ok: false, error: 'reply required' }, 400);
@@ -293,7 +317,7 @@ async function handleApi(request, env, url) {
   // with rid → delete a single reply; without → delete the whole message
   if (path === '/api/guestbook' && request.method === 'DELETE') {
     const key = url.searchParams.get('key');
-    if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) return json({ ok: false, error: 'unauthorized' }, 401);
+    if (!env.ADMIN_KEY || !(await timingSafeEqualStr(key || '', env.ADMIN_KEY))) return json({ ok: false, error: 'unauthorized' }, 401);
     const id = url.searchParams.get('id');
     const rid = url.searchParams.get('rid');
     let msgs = await getMessages(env);
@@ -370,7 +394,11 @@ export default {
       return stub.fetch(request);
     }
     if (url.pathname.startsWith('/api/')) {
-      return handleApi(request, env, url);
+      try {
+        return await handleApi(request, env, url);
+      } catch (e) {
+        return json({ ok: false, error: 'service temporarily unavailable' }, 503);
+      }
     }
     return env.ASSETS.fetch(request);
   },
