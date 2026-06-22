@@ -1872,49 +1872,6 @@ body.night-mode .star {
 .hero-meta #heroViews { color: #ff8aab; font-weight: 700; }
 .hero-meta-sep { color: rgba(216, 220, 228, 0.3); margin: 0 2px; }
 
-/* "by the numbers" — live stats wall */
-.numbers-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-}
-.nstat {
-  padding: 16px 14px 13px;
-  background: linear-gradient(165deg, rgba(20, 8, 14, 0.75), rgba(10, 4, 8, 0.85));
-  border: 1px solid rgba(180, 30, 70, 0.22);
-  border-radius: 10px;
-  text-align: center;
-  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.25s ease;
-}
-.nstat:hover {
-  border-color: rgba(255, 138, 171, 0.5);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(120, 10, 40, 0.3);
-}
-.nstat-val {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 26px;
-  font-weight: 700;
-  color: #ff8aab;
-  text-shadow: 0 0 16px rgba(180, 30, 70, 0.5);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-.nstat-label {
-  margin-top: 5px;
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: 0.04em;
-}
-.nstat-src {
-  margin-top: 7px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: rgba(216, 220, 228, 0.32);
-}
-
 .activity {
   color: var(--accent);
   font-size: 12px;
@@ -4941,52 +4898,6 @@ body.eclipse .blood-moon { animation: moonEclipse 7.2s ease-in-out forwards; }
 }
 
 /* ============================================================
-   /now section — life snapshot, key/value list
-   ============================================================ */
-.now-meta {
-  color: var(--muted);
-  font-size: 12px;
-  margin: -4px 0 14px;
-  letter-spacing: 0.2px;
-}
-.now-meta time { color: var(--accent); }
-.now-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.now-list li {
-  display: grid;
-  grid-template-columns: 80px 1fr;
-  gap: 14px;
-  align-items: baseline;
-  padding: 6px 0;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
-  font-size: 13px;
-}
-.now-list li:last-child { border-bottom: none; }
-.now-key {
-  color: var(--accent);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  text-transform: lowercase;
-  letter-spacing: 0.08em;
-}
-.now-val { color: var(--text); line-height: 1.5; }
-.now-blurb {
-  color: var(--text);
-  font-size: 13.5px;
-  line-height: 1.65;
-  margin: 0 0 10px;
-}
-.now-blurb a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(255, 138, 171, 0.4); }
-.now-blurb a:hover { border-bottom-color: var(--accent); }
-.now-blurb-dim { color: var(--muted); font-style: italic; }
-
-/* ============================================================
    notes feed — small datestamped posts
    ============================================================ */
 .notes-list {
@@ -5051,9 +4962,7 @@ body.eclipse .blood-moon { animation: moonEclipse 7.2s ease-in-out forwards; }
 }
 .note-body a:hover { border-bottom-color: var(--accent); }
 
-/* mobile: collapse now-list cols a bit */
 @media (max-width: 540px) {
-  .now-list li { grid-template-columns: 70px 1fr; gap: 10px; font-size: 12.5px; }
   .note { padding: 12px 13px 12px 15px; }
   .note-title { font-size: 19px; }
 }
